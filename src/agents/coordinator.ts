@@ -1,4 +1,5 @@
 import { ensureApiKey, openaiClient } from "../config/openai";
+import { getAgentDefinition } from "./registry";
 import { UserQueryRequest, UserQueryResponse } from "./types";
 import { extractFirstText } from "./utils";
 
@@ -7,11 +8,27 @@ export async function invokeCoordinator(
 ): Promise<UserQueryResponse> {
   ensureApiKey();
 
-  // Placeholder call to coordinator agent. Replace with Agents SDK client when available.
-  const prompt = `Pergunta: ${input.question}\nContexto: ${input.context || ""}`;
+  const coordinator = getAgentDefinition("coordinator");
+
+  const messages = [
+    {
+      role: "system" as const,
+      content: [{ type: "input_text" as const, text: coordinator.instructions }],
+    },
+    {
+      role: "user" as const,
+      content: [
+        {
+          type: "input_text" as const,
+          text: `Pergunta: ${input.question}\nContexto: ${input.context || ""}`,
+        },
+      ],
+    },
+  ];
+
   const completion = await openaiClient.responses.create({
-    model: "gpt-4o-mini",
-    input: prompt,
+    model: coordinator.model,
+    input: messages,
   });
 
   const answer = extractFirstText(completion.output);
