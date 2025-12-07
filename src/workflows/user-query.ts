@@ -1,5 +1,5 @@
-import { invokeCoordinator } from "../agents/coordinator";
-import { getAgentDefinition } from "../agents/registry";
+import { invokeCoordinator } from "../agents/coordinator.js";
+import { getAgentDefinition } from "../agents/registry.js";
 import {
   AgentId,
   AgentTraceExample,

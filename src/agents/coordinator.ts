@@ -1,11 +1,11 @@
-import { ensureApiKey, openaiClient } from "../config/openai";
-import { getAgentDefinition } from "./registry";
+import { ensureApiKey, openaiClient } from "../config/openai.js";
+import { getAgentDefinition } from "./registry.js";
 import {
   AgentTraceExample,
   UserQueryRequest,
   UserQueryResponse,
-} from "./types";
-import { extractFirstText } from "./utils";
+} from "./types.js";
+import { extractFirstText } from "./utils.js";
 
 export async function invokeCoordinator(
   input: UserQueryRequest

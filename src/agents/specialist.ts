@@ -1,6 +1,6 @@
-import { ensureApiKey, openaiClient } from "../config/openai";
-import { AgentId, UserQueryRequest, UserQueryResponse } from "./types";
-import { extractFirstText } from "./utils";
+import { ensureApiKey, openaiClient } from "../config/openai.js";
+import { AgentId, UserQueryRequest, UserQueryResponse } from "./types.js";
+import { extractFirstText } from "./utils.js";
 
 export async function invokeSpecialist(
   agent: AgentId,

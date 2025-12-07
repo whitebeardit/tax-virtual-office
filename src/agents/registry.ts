@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import * as YAML from "js-yaml";
 
-import { AgentId } from "./types";
+import { AgentId } from "./types.js";
 
 interface AgentFileDefinition {
   id: AgentId;

@@ -9,8 +9,8 @@ import {
   PortalDefinition,
   PortalDocument,
   VectorStoreDefinition,
-} from "./types";
-import { httpFetch } from "../mcp/httpFetchTool";
+} from "./types.js";
+import { httpFetch } from "../mcp/httpFetchTool.js";
 
 interface PortalsFile {
   portals: PortalDefinition[];
