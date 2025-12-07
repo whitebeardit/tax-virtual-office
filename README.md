@@ -28,8 +28,10 @@ flowchart TD
     User(Usuário) -->|HTTP| API[Express API / server]
     API --> QueryWorkflow[Workflow de consultas]
     QueryWorkflow --> Coordinator[Agente coordinator]
-    Coordinator --> Specialists[Agentes especialistas]
-    Specialists --> OpenAI[(OpenAI Responses API)]
+    Coordinator -->|Handoffs automáticos| Specialists[Agentes especialistas]
+    Coordinator --> AgentsSDK[OpenAI Agents SDK]
+    Specialists --> AgentsSDK
+    AgentsSDK --> OpenAI[(OpenAI Chat Completions API)]
 
     API --> DailyTrigger[Execução diária / admin]
     DailyTrigger --> Maintenance[Watchers e classificadores]
@@ -80,7 +82,10 @@ No Cursor:
 
 ## Estado atual da implementação
 
-- O workflow de consulta (`/query`) agora monta o plano com especialistas e ferramentas com base na pergunta, reaproveitando o catálogo de agentes e exibindo quais modelos serão acionados. 【F:src/workflows/user-query.ts†L1-L78】【F:src/agents/registry.ts†L1-L55】
-- O coordinator passa a instrumentar o plano retornado com fontes reais (file-search/web) e exemplos de traces de agentes, propagando a lista de especialistas, ferramentas e rastros para facilitar auditoria do fluxo de consulta. 【F:src/agents/coordinator.ts†L1-L78】【F:src/workflows/user-query.ts†L1-L90】
-- A varredura de portais (`runDailyPortalsScan` e `/admin/run-daily`) agora faz fetch das listagens, extrai links reais via HTML, deduplica por hash em `agents/.cache/portal-state.json` e registra métricas por portal. Novos itens retornam com `portalId`, `portalType`, `contentHash`, `publishedAt` e `detectedAt`. 【F:src/workflows/daily-portals-scan.ts†L1-L16】【F:src/agents/maintenance.ts†L41-L121】【F:src/agents/maintenance.ts†L171-L221】
-- A classificação de documentos usa heurísticas e o catálogo `agents/vectorstores.yaml` para pontuar o melhor `vectorStoreId`, retornando rationale e score sem depender de chamadas de modelo. O upload passa a baixar e persistir o HTML na pasta `agents/.cache/downloads` antes de registrar destino e tags. 【F:src/agents/types.ts†L17-L41】【F:src/agents/maintenance.ts†L70-L108】【F:src/agents/maintenance.ts†L123-L170】
+- **Migração para OpenAI Agents SDK**: Todos os agentes agora usam o [OpenAI Agents SDK](https://github.com/openai/openai-agents-js) para gerenciamento de agentes, handoffs automáticos e agent loops. 【F:src/agents/agents-sdk.ts】【F:src/agents/tools.ts】
+- **Handoffs Automáticos**: O coordinator usa `Agent.create()` com handoffs configurados para especialistas. Handoffs são gerenciados automaticamente pelo SDK durante a execução. 【F:src/agents/coordinator.ts】【F:src/agents/agents-sdk.ts】
+- **Tools com Validação Zod**: Todas as ferramentas MCP são implementadas usando `tool()` helper do SDK com validação de parâmetros via Zod. 【F:src/agents/tools.ts】
+- **Modelos do Registry**: Especialistas agora respeitam os modelos configurados em `agents.yaml` (sem hardcode). 【F:src/agents/specialist.ts】
+- O workflow de consulta (`/query`) monta o plano com especialistas e ferramentas, com handoffs gerenciados automaticamente pelo Agents SDK. 【F:src/workflows/user-query.ts】
+- A varredura de portais (`runDailyPortalsScan` e `/admin/run-daily`) faz fetch das listagens, extrai links reais via HTML, deduplica por hash em `agents/.cache/portal-state.json` e registra métricas por portal. 【F:src/workflows/daily-portals-scan.ts】【F:src/agents/maintenance.ts】
+- A classificação de documentos usa heurísticas e o catálogo `agents/vectorstores.yaml` para pontuar o melhor `vectorStoreId`, retornando rationale e score sem depender de chamadas de modelo. 【F:src/agents/maintenance.ts】

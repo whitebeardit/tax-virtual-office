@@ -4,6 +4,10 @@
 
 O Tax Virtual Office utiliza uma arquitetura baseada em **agentes especializados** que trabalham em conjunto para processar consultas tributárias e automatizar a ingestão de documentos fiscais. A arquitetura segue o padrão **coordinator-specialist** com ferramentas MCP (Model Context Protocol) para acesso a fontes de dados.
 
+**Framework**: O sistema utiliza o **[OpenAI Agents SDK](https://github.com/openai/openai-agents-js)** para gerenciar agentes, handoffs automáticos, agent loops e integração de tools. Todos os agentes são criados usando `Agent` do SDK e executados via `run()`.
+
+**Framework**: O sistema utiliza o **[OpenAI Agents SDK](https://github.com/openai/openai-agents-js)** para gerenciar agentes, handoffs automáticos, agent loop e integração de tools. Todos os agentes são criados usando `Agent` e executados via `run()` do SDK.
+
 ## Tipos de Agentes
 
 ### 1. Agente Coordenador (`coordinator`)
@@ -20,8 +24,15 @@ O Tax Virtual Office utiliza uma arquitetura baseada em **agentes especializados
 2. Analisa domínio (NF-e, NFC-e, CT-e, IBS/CBS, Misto)
 3. Consulta `file-search` em vector stores prioritários
 4. Planeja execução com especialistas e ferramentas
-5. Aciona especialistas apropriados
+5. **Handoffs automáticos** para especialistas apropriados (gerenciados pelo Agents SDK)
 6. Consolida respostas com fontes e traces
+
+**Implementação**:
+- Criado via `createCoordinatorAgent()` em `src/agents/agents-sdk.ts`
+- Usa `Agent.create()` com handoffs para especialistas
+- Executado via `run(coordinator, userInput)` do Agents SDK
+- Handoffs são gerenciados automaticamente pelo SDK durante a execução
+- Agent loop gerenciado automaticamente pelo SDK
 
 **Políticas**:
 - **SEMPRE** consultar `file-search` antes de responder
@@ -43,9 +54,10 @@ O Tax Virtual Office utiliza uma arquitetura baseada em **agentes especializados
 **Responsabilidade**: Responder questões técnicas sobre NF-e modelo 55.
 
 **Características**:
-- **Modelo**: `gpt-5.1`
+- **Modelo**: `gpt-5.1` (configurado em `agents.yaml`, respeitado pelo SDK)
 - **Ferramentas**: `file-search`, `logger`
 - **Prompt**: `agents/prompts/specialist-nfe.system.md`
+- **Handoff**: Disponível para o coordinator via Agents SDK
 
 **Escopo**:
 - Emissão, autorização, rejeição, cancelamento, inutilização
@@ -473,35 +485,57 @@ interface UserQueryResponse {
 - **`agents/.cache/downloads/`**: Arquivos baixados dos portais
 - **Cache em memória**: Definições YAML carregadas uma vez
 
-## Integração com OpenAI Responses API
+## Integração com OpenAI Agents SDK
 
-Todos os agentes usam a **OpenAI Responses API** (não Chat Completions):
+Todos os agentes usam o **[OpenAI Agents SDK](https://github.com/openai/openai-agents-js)** para gerenciamento de agentes, handoffs e agent loops:
 
 ```typescript
-const completion = await openaiClient.responses.create({
-  model: coordinator.model,
-  input: messages, // Array de mensagens com role e content
+import { Agent, run } from '@openai/agents';
+import { createCoordinatorAgent } from './agents-sdk.js';
+
+const coordinator = createCoordinatorAgent();
+const result = await run(coordinator, userInput);
+const answer = result.finalOutput;
+```
+
+**Criação de Agentes**:
+```typescript
+// Factory function cria Agent do SDK a partir do registry YAML
+const coordinator = createCoordinatorAgent();
+
+// Especialistas são criados como handoffs
+const specialist = createSpecialistAgent('specialist-nfe');
+```
+
+**Handoffs Automáticos**:
+- O coordinator é criado com `Agent.create()` incluindo handoffs para todos os especialistas
+- Handoffs são gerenciados automaticamente pelo SDK durante a execução
+- O SDK decide quando transferir controle para um especialista baseado no contexto
+
+**Tools com Validação Zod**:
+```typescript
+import { tool } from '@openai/agents';
+import { z } from 'zod';
+
+const fileSearchTool = tool({
+  name: 'file-search',
+  description: 'Busca em vector stores',
+  parameters: z.object({
+    vectorStoreId: z.string(),
+    query: z.string(),
+  }),
+  execute: async (input) => {
+    // Implementação
+  },
 });
 ```
 
-**Estrutura de Mensagens**:
-```typescript
-[
-  {
-    role: "system",
-    content: [{ type: "input_text", text: instructions }]
-  },
-  {
-    role: "user",
-    content: [{ type: "input_text", text: question }]
-  }
-]
-```
-
-**Extração de Resposta**:
-```typescript
-const answer = extractFirstText(completion.output);
-```
+**Benefícios do Agents SDK**:
+- **Agent Loop Automático**: O SDK gerencia chamadas de tools e loops até conclusão
+- **Handoffs Nativos**: Transferência automática entre agentes
+- **Type Safety**: Validação de parâmetros com Zod
+- **Tracing Integrado**: Preparado para debug e monitoramento
+- **Modelos do Registry**: Respeita configuração em `agents.yaml` (sem hardcode)
 
 ## Monitoramento e Logging
 
@@ -594,34 +628,32 @@ Esta seção documenta limitações técnicas e comportamentos conhecidos da arq
 - `src/agents/registry.ts:24` (cache de agentes)
 - `src/agents/maintenance.ts:38-40` (cache de portais e vector stores)
 
-### 3. Modelo Hardcoded em invokeSpecialist
+### 3. ~~Modelo Hardcoded em invokeSpecialist~~ ✅ RESOLVIDO
 
-**Limitação**: A função `invokeSpecialist()` em `src/agents/specialist.ts` usa modelo hardcoded `gpt-4o-mini` em vez de usar o modelo definido no registry.
+**Status**: **RESOLVIDO** com a migração para Agents SDK.
 
-**Impacto**:
-- Especialistas sempre usam `gpt-4o-mini`, ignorando o modelo configurado em `agents.yaml`
-- Inconsistência entre configuração e execução
+**Solução**:
+- `invokeSpecialist()` agora usa `createSpecialistAgent()` que lê o modelo do registry
+- Modelos configurados em `agents.yaml` são respeitados
+- Sem hardcode de modelos no código
 
-**Workaround**:
-- Atualmente, todos os especialistas usam `gpt-4o-mini` independente da configuração
-- Para usar modelos diferentes, modificar `src/agents/specialist.ts:12` para ler do registry
-
-**Código Afetado**: `src/agents/specialist.ts:12`
+**Código Atual**: `src/agents/specialist.ts` usa `createSpecialistAgent()` que respeita `agents.yaml`
 
 ### 4. Heurística Simples de Seleção de Especialistas
 
 **Limitação**: `pickSpecialists()` usa apenas keywords simples (ex.: "nfc", "nf-e", "cte", "ibs") para identificar especialistas.
 
 **Impacto**:
-- Pode selecionar especialistas incorretos para perguntas ambíguas
-- Não considera contexto semântico da pergunta
-- Pode acionar múltiplos especialistas desnecessariamente
+- Usado apenas para metadata (nomes de especialistas na resposta)
+- **Handoffs reais são gerenciados automaticamente pelo Agents SDK**
+- O coordinator decide quando fazer handoff baseado no contexto da conversa
 
-**Workaround**:
-- Perguntas específicas funcionam bem
-- Para perguntas genéricas, todos os especialistas são acionados (comportamento conservador)
+**Comportamento Atual**:
+- `pickSpecialists()` identifica especialistas relevantes para metadata
+- O Agents SDK gerencia handoffs reais durante a execução do agent loop
+- Handoffs são mais inteligentes que a heurística simples de keywords
 
-**Código Afetado**: `src/workflows/user-query.ts:50-75`
+**Código Afetado**: `src/workflows/user-query.ts:50-75` (apenas para metadata)
 
 ### 5. Deduplicação Baseada em Hash
 
