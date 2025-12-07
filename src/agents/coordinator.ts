@@ -1,37 +1,44 @@
-import { ensureApiKey, openaiClient } from "../config/openai.js";
+import { run } from "@openai/agents";
+import { createOpenAIAgent, getTracingInfo } from "../config/openai-agents.js";
 import { getAgentDefinition } from "./registry.js";
 import {
   AgentTraceExample,
   UserQueryRequest,
   UserQueryResponse,
 } from "./types.js";
-import { extractFirstText } from "./utils.js";
 
+/**
+ * Invoca o agente coordenador usando o OpenAI Agents SDK
+ * 
+ * Com o Agents SDK, todas as chamadas são automaticamente rastreadas
+ * e aparecem no dashboard da OpenAI: https://platform.openai.com/logs
+ */
 export async function invokeCoordinator(
   input: UserQueryRequest
 ): Promise<UserQueryResponse> {
-  ensureApiKey();
+  // Criar agente usando o Agents SDK
+  const agent = createOpenAIAgent("coordinator");
 
-  const coordinator = getAgentDefinition("coordinator");
+  // Construir o prompt do usuário
+  const userPrompt = `Pergunta: ${input.question}${
+    input.context ? `\nContexto: ${input.context}` : ""
+  }`;
 
-  const messages = [
-    {
-      role: "system" as const,
-      content: coordinator.instructions,
-    },
-    {
-      role: "user" as const,
-      content: `Pergunta: ${input.question}\nContexto: ${input.context || ""}`,
-    },
-  ];
+  // Executar o agente com tracing automático
+  // O run() automaticamente envia traces para o dashboard da OpenAI
+  const result = await run(agent, userPrompt);
 
-  const completion = await openaiClient.chat.completions.create({
-    model: coordinator.model,
-    messages: messages,
-  });
+  // Extrair a resposta final
+  const answer = result.finalOutput || "";
 
-  const answer = extractFirstText(completion);
-  
+  // Verificar se o tracing está ativo (para logs informativos)
+  const tracingInfo = getTracingInfo();
+  if (tracingInfo.enabled) {
+    console.log(
+      `[Tracing] Coordenador executado. Ver traces em: ${tracingInfo.dashboardUrl}`
+    );
+  }
+
   return {
     answer,
     plan: buildInstrumentedPlan(input.question),

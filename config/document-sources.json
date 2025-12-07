@@ -1,0 +1,116 @@
+{
+  "allowedDomains": {
+    "description": "Domínios oficiais permitidos para consulta via web tool",
+    "domains": [
+      {
+        "pattern": "*.gov.br",
+        "description": "Todos os domínios do governo brasileiro",
+        "examples": [
+          "www.fazenda.gov.br",
+          "www.receita.fazenda.gov.br",
+          "www.nfe.fazenda.gov.br"
+        ]
+      },
+      {
+        "pattern": "*.fazenda.gov.br",
+        "description": "Domínios do Ministério da Fazenda",
+        "examples": [
+          "www.nfe.fazenda.gov.br",
+          "www.confaz.fazenda.gov.br"
+        ]
+      },
+      {
+        "pattern": "*.fazenda.sp.gov.br",
+        "description": "Domínios da SEFAZ de São Paulo",
+        "examples": [
+          "portal.fazenda.sp.gov.br"
+        ]
+      },
+      {
+        "pattern": "*.fazenda.mg.gov.br",
+        "description": "Domínios da SEFAZ de Minas Gerais",
+        "examples": [
+          "portal.fazenda.mg.gov.br"
+        ]
+      },
+      {
+        "pattern": "dfe-portal.svrs.rs.gov.br",
+        "description": "Portal SVRS (SEFAZ Virtual Rio Grande do Sul) - Autorizador compartilhado usado por aproximadamente metade das UFs",
+        "examples": [
+          "https://dfe-portal.svrs.rs.gov.br/Nfe/Noticias",
+          "https://dfe-portal.svrs.rs.gov.br/Nfce/Documentos",
+          "https://dfe-portal.svrs.rs.gov.br/Cte/Legislacao"
+        ]
+      },
+      {
+        "pattern": "encat.org.br",
+        "description": "Portal da ENCAT (Entidade Nacional de Coordenação e Acompanhamento da NFC-e)",
+        "examples": [
+          "www.encat.org.br"
+        ]
+      },
+      {
+        "pattern": "confaz.fazenda.gov.br",
+        "description": "Portal do CONFAZ (Conselho Nacional de Política Fazendária)",
+        "examples": [
+          "www.confaz.fazenda.gov.br"
+        ]
+      }
+    ]
+  },
+  "portals": {
+    "description": "Portais oficiais de documentos fiscais eletrônicos",
+    "list": [
+      {
+        "id": "nfe",
+        "name": "Portal Nacional NF-e",
+        "urlBase": "https://www.nfe.fazenda.gov.br/portal",
+        "domain": "nfe.fazenda.gov.br",
+        "type": "nacional"
+      },
+      {
+        "id": "nfe-svrs",
+        "name": "SVRS NF-e (SEFAZ Virtual RS)",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br",
+        "domain": "dfe-portal.svrs.rs.gov.br",
+        "type": "nacional",
+        "sections": [
+          "/Nfe/Noticias",
+          "/Nfe/Documentos",
+          "/Nfe/Legislacao"
+        ]
+      },
+      {
+        "id": "nfce-svrs",
+        "name": "SVRS NFC-e (SEFAZ Virtual RS)",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br",
+        "domain": "dfe-portal.svrs.rs.gov.br",
+        "type": "nacional",
+        "sections": [
+          "/Nfce/Noticias",
+          "/Nfce/Documentos",
+          "/Nfce/Legislacao"
+        ]
+      },
+      {
+        "id": "mdfe-svrs",
+        "name": "SVRS MDF-e (SEFAZ Virtual RS)",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br",
+        "domain": "dfe-portal.svrs.rs.gov.br",
+        "type": "nacional",
+        "sections": [
+          "/Mdfe/Noticias",
+          "/Mdfe/Documentos",
+          "/Mdfe/Legislacao"
+        ]
+      },
+      {
+        "id": "confaz",
+        "name": "CONFAZ",
+        "urlBase": "https://www.confaz.fazenda.gov.br",
+        "domain": "confaz.fazenda.gov.br",
+        "type": "nacional"
+      }
+    ]
+  }
+}
