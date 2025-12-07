@@ -33,7 +33,7 @@ export async function runUserQueryWorkflow(
     sources: [
       ...(coordinatorResponse.sources || []),
       ...specialistNames,
-      "docs/Agents.md",
+      "docs/AGENTS.md",
       "docs/WORKFLOWS.md",
     ],
     agentTraces,

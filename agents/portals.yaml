@@ -24,3 +24,48 @@ portals:
     baseUrl: "https://portal.fazenda.mg.gov.br"
     listingPath: "/empresas/nfe/noticias"
     type: "estadual"
+  - id: svrs-nfe-noticias
+    name: SVRS NF-e Notícias (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nfe/Noticias"
+    type: "nacional"
+  - id: svrs-nfe-documentos
+    name: SVRS NF-e Documentos (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nfe/Documentos"
+    type: "nacional"
+  - id: svrs-nfe-legislacao
+    name: SVRS NF-e Legislação (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nfe/Legislacao"
+    type: "nacional"
+  - id: svrs-nfce-noticias
+    name: SVRS NFC-e Notícias (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nfce/Noticias"
+    type: "nacional"
+  - id: svrs-nfce-documentos
+    name: SVRS NFC-e Documentos (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nfce/Documentos"
+    type: "nacional"
+  - id: svrs-nfce-legislacao
+    name: SVRS NFC-e Legislação (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nfce/Legislacao"
+    type: "nacional"
+  - id: svrs-cte-noticias
+    name: SVRS CT-e Notícias (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Cte/Noticias"
+    type: "nacional"
+  - id: svrs-cte-documentos
+    name: SVRS CT-e Documentos (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Cte/Documentos"
+    type: "nacional"
+  - id: svrs-cte-legislacao
+    name: SVRS CT-e Legislação (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Cte/Legislacao"
+    type: "nacional"

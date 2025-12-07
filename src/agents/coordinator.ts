@@ -69,7 +69,7 @@ function buildTraceExamples(): AgentTraceExample[] {
     },
     {
       agentId: "specialist-nfe" as const,
-      calledTools: ["file-search:docs/Agents.md"],
+      calledTools: ["file-search:docs/AGENTS.md"],
       sample:
         "[specialist-nfe] file-search → extraiu regras de destaque de ICMS do FAQ do portal; consolidou notas e citou seção específica na resposta final.",
     },
