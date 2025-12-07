@@ -67,6 +67,6 @@ Uso básico:
 
 ## Estado atual da implementação
 
-- O workflow de consulta (`/query`) já carrega o agente coordinator definido em `agents/agents.yaml`, aplica o prompt de sistema correspondente e usa o modelo configurado, mas ainda devolve um plano estático sem orquestrar especialistas ou ferramentas. 【F:src/agents/coordinator.ts†L5-L33】【F:src/agents/registry.ts†L5-L55】
-- A varredura de portais (`runDailyPortalsScan` e `/admin/run-daily`) ainda é um esqueleto: `watchPortals` retorna sempre uma lista vazia após um `httpFetch` de healthcheck e `uploadDocument` só registra no log. 【F:src/workflows/daily-portals-scan.ts†L1-L14】【F:src/agents/maintenance.ts†L6-L29】
-- A classificação de documentos usa um prompt genérico e sempre devolve o mesmo `vectorStoreId` em vez de consultar o catálogo de `agents/vectorstores.yaml`. 【F:src/agents/maintenance.ts†L13-L27】
+- O workflow de consulta (`/query`) agora monta o plano com especialistas e ferramentas com base na pergunta, reaproveitando o catálogo de agentes e exibindo quais modelos serão acionados. 【F:src/workflows/user-query.ts†L1-L78】【F:src/agents/registry.ts†L1-L55】
+- A varredura de portais (`runDailyPortalsScan` e `/admin/run-daily`) percorre `agents/portals.yaml`, faz `httpFetch` nas listagens e devolve itens detectados com `portalId`, `portalType` e timestamp. O upload registra métricas básicas de download e destino. 【F:src/workflows/daily-portals-scan.ts†L1-L12】【F:src/agents/maintenance.ts†L1-L123】
+- A classificação de documentos usa os metadados do portal para escolher o `vectorStoreId` a partir de `agents/vectorstores.yaml`, preservando tags e rationale retornado pelo modelo. 【F:src/agents/maintenance.ts†L68-L123】
