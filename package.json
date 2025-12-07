@@ -11,6 +11,7 @@
     "lint": "echo 'no lint configured'"
   },
   "dependencies": {
+    "js-yaml": "^4.1.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "node-fetch": "^2.7.0",
@@ -22,6 +23,7 @@
     "@types/node-fetch": "^2.6.4",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "@types/js-yaml": "^4.0.9"
   }
 }
