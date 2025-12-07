@@ -8,11 +8,16 @@ export async function invokeSpecialist(
 ): Promise<UserQueryResponse> {
   ensureApiKey();
 
-  const completion = await openaiClient.responses.create({
+  const completion = await openaiClient.chat.completions.create({
     model: "gpt-4o-mini",
-    input: `Agente: ${agent}\nPergunta: ${input.question}`,
+    messages: [
+      {
+        role: "user",
+        content: `Agente: ${agent}\nPergunta: ${input.question}`,
+      },
+    ],
   });
 
-  const answer = extractFirstText(completion.output);
+  const answer = extractFirstText(completion);
   return { answer };
 }

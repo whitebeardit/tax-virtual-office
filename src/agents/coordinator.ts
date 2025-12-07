@@ -17,25 +17,21 @@ export async function invokeCoordinator(
   const messages = [
     {
       role: "system" as const,
-      content: [{ type: "input_text" as const, text: coordinator.instructions }],
+      content: coordinator.instructions,
     },
     {
       role: "user" as const,
-      content: [
-        {
-          type: "input_text" as const,
-          text: `Pergunta: ${input.question}\nContexto: ${input.context || ""}`,
-        },
-      ],
+      content: `Pergunta: ${input.question}\nContexto: ${input.context || ""}`,
     },
   ];
 
-  const completion = await openaiClient.responses.create({
+  const completion = await openaiClient.chat.completions.create({
     model: coordinator.model,
-    input: messages,
+    messages: messages,
   });
 
-  const answer = extractFirstText(completion.output);
+  const answer = extractFirstText(completion);
+  
   return {
     answer,
     plan: buildInstrumentedPlan(input.question),
