@@ -1,0 +1,22 @@
+---
+description: Delivery workflow for INVOISYS Tax Virtual Office, connecting CI/CD, observability and release governance.
+---
+
+# INVOISYS Tax Virtual Office Delivery Workflow
+
+## Build & Empacotamento
+- `build` → Build project (tsc)
+
+## Testes e validações
+- Nenhum script de qualidade detectado.
+
+## CI/CD
+- Defina pipeline CI com lint, testes e build antes de promover releases.
+
+## Infraestrutura
+- Mapeie infraestrutura alvo e defina padrões de provisionamento.
+
+## Checklist de release
+- Promover apenas branches revisadas e aprovadas.
+- /wb-validate-tasks — Validate Tasks: Confirme status das tarefas antes de liberar feature.
+- Atualize changelog e comunique stakeholders de forma assíncrona.

@@ -33,7 +33,7 @@ flowchart TD
 
     API --> DailyTrigger[Execução diária / admin]
     DailyTrigger --> Maintenance[Watchers e classificadores]
-    Maintenance --> MCP[Ferramentas MCP (ex.: httpFetch)]
+    Maintenance --> MCP["Ferramentas MCP - httpFetch"]
     MCP --> Portais[Portais fiscais]
     Maintenance --> VectorStores[Vector stores / file search]
 ```
@@ -64,6 +64,19 @@ Uso básico:
 - `POST /query` — recebe pergunta do usuário e aciona o agente coordenador.
 - `GET /health` — healthcheck simples.
 - `POST /admin/run-daily` — dispara fluxo diário de monitoramento.
+
+## Integração com Cursor e Task Master
+
+Este repositório já inclui um bundle de comandos e regras específico para o projeto:
+
+- `.cursor/rules/`: guardrails de engenharia e fluxo de trabalho (ex.: `invoisys-tax-virtual-office-rules.mdc`, `dev_workflow.mdc`, `git_workflow.mdc`).
+- `.cursor/commands/`: comandos prontos do Whitebeard/Task Master (ex.: `wb-quick-start`, `wb-next-task`, `wb-analyze-codebase`).
+
+No Cursor:
+
+1. Abra o projeto `tax-virtual-office`.
+2. Abra o painel **Commands** e procure pelos comandos `wb-*`.
+3. Siga o comando `wb-quick-start` para onboarding guiado no fluxo de tarefas deste repositório.
 
 ## Estado atual da implementação
 

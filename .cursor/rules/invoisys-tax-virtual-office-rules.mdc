@@ -1,0 +1,29 @@
+---
+description: Engineering guardrails for INVOISYS Tax Virtual Office based on detected stack characteristics.
+---
+
+# INVOISYS Tax Virtual Office Engineering Playbook
+
+## Stack Overview
+- JavaScript
+- TypeScript
+- Express
+
+## Coding Conventions
+- backend
+- frontend
+- .cursor
+
+## Quality Gates
+- Executar testes automatizados antes de PRs.
+- Validar linting e formatação automática.
+- Garantir cobertura mínima definida pelo time.
+
+## Automation Hooks
+- Integrar scripts de automação no CI/CD.
+- Publicar pacotes internos via npm scripts versionados.
+- Preparar hooks de observabilidade (OpenTelemetry / logs estruturados).
+
+## Notes
+- Detected package.json and Node.js ecosystem.
+- Gerar comandos e rulepacks em português quando fizer sentido, adaptados ao fluxo de trabalho da equipe INVOISYS para o projeto Tax Virtual Office.

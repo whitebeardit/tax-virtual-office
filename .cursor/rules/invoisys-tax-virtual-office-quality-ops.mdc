@@ -1,0 +1,19 @@
+---
+description: Quality operations and continuous improvement practices tailored for INVOISYS Tax Virtual Office.
+---
+
+# INVOISYS Tax Virtual Office Quality Operations
+
+## Práticas fundamentais
+- Automatize linting e testes em commits e pipelines.
+- Mantenha coverage reportado e acompanhando metas do time.
+
+## Quality Gates
+- Executar testes automatizados antes de PRs.
+- Validar linting e formatação automática.
+- Garantir cobertura mínima definida pelo time.
+
+## Ciclos de feedback
+- Monitore métricas de bugs, MTTR e cobertura em painel visível ao time.
+- Automatize alertas para regressões em pipelines.
+- Revise padrões trimestralmente com produto, engenharia e QA.
