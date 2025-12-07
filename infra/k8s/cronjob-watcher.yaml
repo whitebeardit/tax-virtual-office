@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: tax-virtual-office-watcher
+spec:
+  schedule: "0 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: watcher
+              image: tax-virtual-office:latest
+              env:
+                - name: APP_MODE
+                  value: "daily-portals-scan"
+                - name: OPENAI_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: openai
+                      key: api-key

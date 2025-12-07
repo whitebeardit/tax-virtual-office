@@ -1,0 +1,26 @@
+portals:
+  - id: encat-nfce
+    name: ENCAT NFC-e
+    baseUrl: "https://www.encat.org.br"
+    listingPath: "/nfce-documentos"
+    type: "nacional"
+  - id: portal-nacional-nfe
+    name: Portal Nacional NF-e
+    baseUrl: "https://www.nfe.fazenda.gov.br"
+    listingPath: "/portal/listaNoticia.aspx?tipoConteudo=1"
+    type: "nacional"
+  - id: confaz-ajustes-sinief
+    name: CONFAZ Ajustes SINIEF
+    baseUrl: "https://www.confaz.fazenda.gov.br"
+    listingPath: "/legislacao/ajustes"
+    type: "nacional"
+  - id: sefaz-sp-nfc
+    name: SEFAZ-SP NFC-e
+    baseUrl: "https://portal.fazenda.sp.gov.br"
+    listingPath: "/noticias"
+    type: "estadual"
+  - id: sefaz-mg-nfe
+    name: SEFAZ-MG NF-e
+    baseUrl: "https://portal.fazenda.mg.gov.br"
+    listingPath: "/empresas/nfe/noticias"
+    type: "estadual"

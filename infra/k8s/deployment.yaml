@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tax-virtual-office-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tax-virtual-office-api
+  template:
+    metadata:
+      labels:
+        app: tax-virtual-office-api
+    spec:
+      containers:
+        - name: api
+          image: tax-virtual-office:latest
+          env:
+            - name: APP_MODE
+              value: "api"
+            - name: PORT
+              value: "3000"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openai
+                  key: api-key
+          ports:
+            - containerPort: 3000

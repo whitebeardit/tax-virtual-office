@@ -1,0 +1,11 @@
+vectorStores:
+  - id: legislacao-nacional-ibs-cbs-is
+    description: "Leis complementares, emendas, decretos, regulamentos que tratam de IBS, CBS e IS em âmbito nacional."
+  - id: normas-tecnicas-nfe-nfce-cte
+    description: "Notas técnicas, manuais, esquemas XML, FAQs oficiais de NF-e, NFC-e, CT-e, MDF-e."
+  - id: documentos-estaduais-ibc-cbs
+    description: "Normas estaduais sobre IBS/CBS/IS vinculadas aos documentos eletrônicos."
+  - id: jurisprudencia-tributaria
+    description: "Jurisprudência e pareceres relevantes à reforma tributária e documentos fiscais."
+  - id: legis-nfe-exemplos-xml
+    description: "XMLs de exemplo, esquemas e guias de implementação específicos de NF-e."
