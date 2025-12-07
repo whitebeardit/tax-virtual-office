@@ -1,23 +1,31 @@
-import { ensureApiKey, openaiClient } from "../config/openai.js";
+import { run } from "@openai/agents";
+import { createOpenAIAgent } from "../config/openai-agents.js";
 import { AgentId, UserQueryRequest, UserQueryResponse } from "./types.js";
-import { extractFirstText } from "./utils.js";
 
+/**
+ * Invoca um agente especialista usando o OpenAI Agents SDK
+ * 
+ * Com o Agents SDK, todas as chamadas são automaticamente rastreadas
+ * e aparecem no dashboard da OpenAI: https://platform.openai.com/logs
+ */
 export async function invokeSpecialist(
-  agent: AgentId,
+  agentId: AgentId,
   input: UserQueryRequest
 ): Promise<UserQueryResponse> {
-  ensureApiKey();
+  // Criar agente usando o Agents SDK
+  const agent = createOpenAIAgent(agentId);
 
-  const completion = await openaiClient.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "user",
-        content: `Agente: ${agent}\nPergunta: ${input.question}`,
-      },
-    ],
-  });
+  // Construir o prompt do usuário
+  const userPrompt = `Agente: ${agentId}\nPergunta: ${input.question}${
+    input.context ? `\nContexto: ${input.context}` : ""
+  }`;
 
-  const answer = extractFirstText(completion);
+  // Executar o agente com tracing automático
+  // O run() automaticamente envia traces para o dashboard da OpenAI
+  const result = await run(agent, userPrompt);
+
+  // Extrair a resposta final
+  const answer = result.finalOutput || "";
+
   return { answer };
 }
