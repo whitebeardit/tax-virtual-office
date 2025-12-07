@@ -9,23 +9,63 @@
  * - Tracing é habilitado por padrão (não requer configuração adicional)
  */
 
-import { Agent } from "@openai/agents";
+import { Agent, handoff } from "@openai/agents";
 import { env } from "./env.js";
 import { getAgentDefinition } from "../agents/registry.js";
 import type { AgentId } from "../agents/types.js";
+import {
+  coordinatorTools,
+  specialistTools,
+} from "../agents/tools.js";
+
+// Cache de agentes para evitar recriação
+const agentCache = new Map<AgentId, Agent>();
 
 /**
  * Cria uma instância de Agent do OpenAI Agents SDK
  * 
  * @param agentId - ID do agente conforme definido em agents.yaml
- * @returns Instância configurada do Agent com tracing automático
+ * @returns Instância configurada do Agent com tracing automático, tools e handoffs
  */
 export function createOpenAIAgent(agentId: AgentId): Agent {
+  // Verificar cache
+  if (agentCache.has(agentId)) {
+    return agentCache.get(agentId)!;
+  }
+
   const definition = getAgentDefinition(agentId);
   
   // Verificar se a API key está configurada
   if (!env.openAiApiKey) {
     throw new Error("OPENAI_API_KEY is not set");
+  }
+
+  // Determinar tools baseado no tipo de agente
+  let tools: any[] = [];
+  let handoffs: any[] = [];
+
+  if (agentId === "coordinator") {
+    // Coordinator tem file-search, web e logger
+    tools = coordinatorTools;
+    
+    // Configurar handoffs para especialistas
+    const specialistIds: AgentId[] = [
+      "specialist-nfe",
+      "specialist-nfce",
+      "specialist-cte",
+      "legislacao-ibs-cbs",
+    ];
+
+    handoffs = specialistIds.map((specialistId) => {
+      const specialistAgent = createSpecialistAgent(specialistId);
+      return handoff(specialistAgent, {
+        toolNameOverride: `handoff_to_${specialistId.replace("-", "_")}`,
+        toolDescriptionOverride: `Delega a pergunta para o especialista ${getAgentDefinition(specialistId).name}. Use quando a pergunta requer conhecimento especializado sobre ${specialistId}.`,
+      });
+    });
+  } else {
+    // Especialistas têm apenas file-search e logger
+    tools = specialistTools;
   }
 
   // Criar agente com o Agents SDK
@@ -34,8 +74,37 @@ export function createOpenAIAgent(agentId: AgentId): Agent {
     name: definition.name,
     instructions: definition.instructions,
     model: definition.model,
+    tools: tools.length > 0 ? tools : undefined,
+    handoffs: handoffs.length > 0 ? handoffs : undefined,
     // O SDK usa automaticamente OPENAI_API_KEY da variável de ambiente
   });
+
+  // Cachear agente
+  agentCache.set(agentId, agent);
+
+  return agent;
+}
+
+/**
+ * Cria um agente especialista (sem handoffs, apenas tools)
+ */
+function createSpecialistAgent(agentId: AgentId): Agent {
+  // Verificar cache
+  if (agentCache.has(agentId)) {
+    return agentCache.get(agentId)!;
+  }
+
+  const definition = getAgentDefinition(agentId);
+
+  const agent = new Agent({
+    name: definition.name,
+    instructions: definition.instructions,
+    model: definition.model,
+    tools: specialistTools,
+  });
+
+  // Cachear
+  agentCache.set(agentId, agent);
 
   return agent;
 }
