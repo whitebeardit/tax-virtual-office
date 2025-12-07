@@ -1,0 +1,69 @@
+agents:
+  - id: coordinator
+    name: Tax Virtual Office Coordinator
+    model: gpt-5.1
+    instructions_file: ./prompts/coordinator.system.md
+    tools:
+      - file-search
+      - web
+      - logger
+
+  - id: specialist-nfce
+    name: NFC-e Specialist
+    model: gpt-5.1
+    instructions_file: ./prompts/specialist-nfce.system.md
+    tools:
+      - file-search
+      - logger
+
+  - id: specialist-nfe
+    name: NF-e Specialist
+    model: gpt-5.1
+    instructions_file: ./prompts/specialist-nfe.system.md
+    tools:
+      - file-search
+      - logger
+
+  - id: specialist-cte
+    name: CT-e Specialist
+    model: gpt-5.1
+    instructions_file: ./prompts/specialist-cte.system.md
+    tools:
+      - file-search
+      - logger
+
+  - id: legislacao-ibs-cbs
+    name: IBS/CBS/IS Legislation Specialist
+    model: gpt-5.1-pro
+    instructions_file: ./prompts/legislacao-ibs-cbs.system.md
+    tools:
+      - file-search
+      - logger
+
+  - id: tax-portal-watcher
+    name: Tax Portal Watcher
+    model: gpt-5.1
+    instructions_file: ./prompts/tax-portal-watcher.system.md
+    tools:
+      - http-fetch
+      - kv-state
+      - logger
+      - task-queue
+
+  - id: tax-document-classifier
+    name: Tax Document Classifier
+    model: gpt-5.1
+    instructions_file: ./prompts/tax-document-classifier.system.md
+    tools:
+      - vector-stores-metadata
+      - logger
+
+  - id: tax-document-uploader
+    name: Tax Document Uploader
+    model: 4o-mini
+    instructions_file: ./prompts/tax-document-uploader.system.md
+    tools:
+      - http-download
+      - file-search-upload
+      - storage
+      - logger
