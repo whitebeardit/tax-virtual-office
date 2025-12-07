@@ -27,9 +27,23 @@ export interface UserQueryResponse {
 
 export interface PortalDocument {
   portalId: string;
+  portalType?: string;
   title: string;
   url: string;
   publishedAt?: string;
+}
+
+export interface PortalDefinition {
+  id: string;
+  name: string;
+  baseUrl: string;
+  listingPath: string;
+  type: string;
+}
+
+export interface VectorStoreDefinition {
+  id: string;
+  description: string;
 }
 
 export interface ClassifiedDocument {
