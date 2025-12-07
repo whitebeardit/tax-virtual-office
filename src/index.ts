@@ -1,5 +1,6 @@
 import { startHttpServer } from "./server/http-server.js";
 import { runDailyPortalsScan } from "./workflows/daily-portals-scan.js";
+import { logger } from "./utils/logger.js";
 
 async function main() {
   const mode = process.env.APP_MODE || "api";
@@ -14,6 +15,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error("Fatal error:", err);
+  logger.error({ error: err }, "Fatal error");
   process.exit(1);
 });

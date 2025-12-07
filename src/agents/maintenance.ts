@@ -11,6 +11,7 @@ import {
   VectorStoreDefinition,
 } from "./types.js";
 import { httpFetch } from "../mcp/httpFetchTool.js";
+import { logger } from "../utils/logger.js";
 
 interface PortalsFile {
   portals: PortalDefinition[];
@@ -116,17 +117,23 @@ export async function uploadDocument(
   }.html`;
   const localPath = path.join(DOWNLOAD_CACHE_DIR, fileName);
   fs.writeFileSync(localPath, content);
-  console.info("Documento baixado", {
-    portalId: document.portalId,
-    bytes: content.length,
-    localPath,
-  });
+  logger.info(
+    {
+      portalId: document.portalId,
+      bytes: content.length,
+      localPath,
+    },
+    "Documento baixado"
+  );
 
-  console.info("Upload concluído", {
-    vectorStoreId: classification.vectorStoreId,
-    tags: classification.tags,
-    rationale: classification.rationale,
-  });
+  logger.info(
+    {
+      vectorStoreId: classification.vectorStoreId,
+      tags: classification.tags,
+      rationale: classification.rationale,
+    },
+    "Upload concluído"
+  );
 }
 
 function chooseVectorStore(document: PortalDocument): string {
@@ -276,11 +283,14 @@ function logPortalMetrics(
   parsedCount: number,
   freshCount: number
 ) {
-  console.info("Portal varrido", {
-    portalId: portal.id,
-    parsed: parsedCount,
-    novos: freshCount,
-  });
+  logger.info(
+    {
+      portalId: portal.id,
+      parsed: parsedCount,
+      novos: freshCount,
+    },
+    "Portal varrido"
+  );
 }
 
 function scoreVectorStores(document: PortalDocument) {
