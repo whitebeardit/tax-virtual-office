@@ -6,6 +6,6 @@ export function extractFirstText(
     return "";
   }
 
-  const textPart = message.content.find((part) => part?.type === "text");
+  const textPart = message.content.find((part) => typeof part?.text === "string");
   return typeof textPart?.text === "string" ? textPart.text : "";
 }
