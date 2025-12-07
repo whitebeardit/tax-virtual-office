@@ -10,6 +10,47 @@ Repositório base para o Escritório Tributário Virtual com agentes coordenador
 - `infra/`: Docker, docker-compose e manifestos Kubernetes.
 - `docs/`: documentação de agentes, portais e vector stores.
 
+## Prompts do sistema (versão final)
+
+Todos os prompts de system já estão consolidados e versionados em `agents/prompts/*.system.md`.
+
+- `coordinator.system.md`: orquestra especialistas e ferramentas MCP.
+- `specialist-nfce.system.md`, `specialist-nfe.system.md`, `specialist-cte.system.md`: especialistas por documento fiscal.
+- `legislacao-ibs-cbs.system.md`: acompanha a reforma tributária.
+- `tax-portal-watcher.system.md`: monitora novos documentos em portais fiscais.
+- `tax-document-classifier.system.md`: decide vector store e tags de armazenamento.
+- `tax-document-uploader.system.md`: fluxo final de upload e catalogação.
+
+## Arquitetura
+
+```mermaid
+flowchart TD
+    User(Usuário) -->|HTTP| API[Express API / server]
+    API --> QueryWorkflow[Workflow de consultas]
+    QueryWorkflow --> Coordinator[Agente coordinator]
+    Coordinator --> Specialists[Agentes especialistas]
+    Specialists --> OpenAI[(OpenAI Responses API)]
+
+    API --> DailyTrigger[Execução diária / admin]
+    DailyTrigger --> Maintenance[Watchers e classificadores]
+    Maintenance --> MCP[Ferramentas MCP (ex.: httpFetch)]
+    MCP --> Portais[Portais fiscais]
+    Maintenance --> VectorStores[Vector stores / file search]
+```
+
+## Docker Compose
+
+Um `docker-compose.yaml` está disponível em `infra/docker-compose.yaml` com dois serviços:
+
+- `api`: expõe a API HTTP na porta 3000 (`APP_MODE=api`).
+- `watcher`: executa o fluxo diário de portais (`APP_MODE=daily-portals-scan`).
+
+Uso básico:
+
+1. Configure `.env` com `OPENAI_API_KEY` e demais variáveis.
+2. Suba os contêineres: `docker compose -f infra/docker-compose.yaml up --build`.
+3. A API ficará disponível em `http://localhost:3000` e o watcher rodará em background.
+
 ## Desenvolvimento
 
 1. Copie `.env.example` para `.env` e ajuste as variáveis.
