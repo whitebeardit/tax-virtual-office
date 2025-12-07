@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import YAML from "js-yaml";
+import * as YAML from "js-yaml";
 
 import { AgentId } from "./types";
 
