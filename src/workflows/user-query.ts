@@ -10,12 +10,18 @@ import {
 export async function runUserQueryWorkflow(
   input: UserQueryRequest
 ): Promise<UserQueryResponse> {
+  // O coordinator agora usa Agents SDK com handoffs automáticos
+  // Os especialistas serão acionados automaticamente via handoffs quando necessário
   const coordinatorResponse = await invokeCoordinator(input);
+  
+  // Identifica quais especialistas poderiam ser úteis (para metadata)
   const specialistIds = pickSpecialists(input.question);
   const specialistNames = specialistIds.map(
     (id) => getAgentDefinition(id).name
   );
   const tools = collectTools(["coordinator", ...specialistIds]);
+  
+  // Extrai traces reais do resultado do Agents SDK (se disponível)
   const agentTraces = mergeTraceExamples(
     coordinatorResponse.agentTraces || [],
     specialistIds,
@@ -26,9 +32,9 @@ export async function runUserQueryWorkflow(
     ...coordinatorResponse,
     plan: [
       ...(coordinatorResponse.plan || []),
-      `Especialistas acionados: ${specialistNames.join(", ") || "nenhum"}.`,
-      `Ferramentas previstas (por agente): ${tools.join(", ") || "nenhuma"}.`,
-      "Traces anexados com exemplos reais de chamadas a file-search e web para orientar a depuração.",
+      `Especialistas disponíveis para handoff: ${specialistNames.join(", ") || "nenhum"}.`,
+      `Ferramentas disponíveis: ${tools.join(", ") || "nenhuma"}.`,
+      "O Agents SDK gerencia automaticamente handoffs entre coordinator e especialistas quando necessário.",
     ],
     sources: [
       ...(coordinatorResponse.sources || []),
