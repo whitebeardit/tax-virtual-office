@@ -473,35 +473,42 @@ interface UserQueryResponse {
 - **`agents/.cache/downloads/`**: Arquivos baixados dos portais
 - **Cache em memória**: Definições YAML carregadas uma vez
 
-## Integração com OpenAI Responses API
+## Integração com OpenAI Agents SDK
 
-Todos os agentes usam a **OpenAI Responses API** (não Chat Completions):
+Todos os agentes usam o **OpenAI Agents SDK** (`@openai/agents`), que fornece tracing automático e suporte a tools e handoffs:
 
 ```typescript
-const completion = await openaiClient.responses.create({
-  model: coordinator.model,
-  input: messages, // Array de mensagens com role e content
+import { run } from "@openai/agents";
+import { createOpenAIAgent } from "../config/openai-agents.js";
+
+// Criar agente usando o Agents SDK
+const agent = createOpenAIAgent("coordinator");
+
+// Executar agente com tracing automático
+const result = await run(agent, userPrompt);
+
+// Extrair resposta final
+const answer = result.finalOutput || "";
+```
+
+**Estrutura de Agente**:
+```typescript
+import { Agent, handoff } from "@openai/agents";
+
+const agent = new Agent({
+  name: definition.name,
+  instructions: definition.instructions,
+  model: definition.model,
+  tools: coordinatorTools,      // file-search, web, logger
+  handoffs: handoffs,           // handoffs para especialistas
 });
 ```
 
-**Estrutura de Mensagens**:
-```typescript
-[
-  {
-    role: "system",
-    content: [{ type: "input_text", text: instructions }]
-  },
-  {
-    role: "user",
-    content: [{ type: "input_text", text: question }]
-  }
-]
-```
-
-**Extração de Resposta**:
-```typescript
-const answer = extractFirstText(completion.output);
-```
+**Tracing Automático**:
+- Todas as chamadas são automaticamente rastreadas
+- Traces aparecem em: https://platform.openai.com/logs
+- Inclui inputs, outputs, tokens, latência, tools e handoffs
+- Não requer configuração adicional além de `OPENAI_API_KEY`
 
 ## Monitoramento e Logging
 

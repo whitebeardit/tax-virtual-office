@@ -93,12 +93,11 @@ Para adicionar um novo domínio permitido:
    }
    ```
 
-2. **Atualizar `src/config/allowed-domains.ts`**:
-   - Adicionar padrão na função `isAllowedDomain()`
+   **Nota**: O código em `src/config/allowed-domains.ts` lê automaticamente do JSON. Não é necessário editar o código TypeScript manualmente. O padrão será validado automaticamente pela função `isAllowedDomain()` que verifica os padrões definidos no JSON.
 
-3. **Atualizar documentação**:
+2. **Atualizar documentação**:
    - Adicionar entrada nesta documentação
-   - Atualizar descrição do `web` tool em `src/agents/tools.ts`
+   - Atualizar descrição do `web` tool em `src/agents/tools.ts` (se necessário)
 
 ## Validação
 
