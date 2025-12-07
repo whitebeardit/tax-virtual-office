@@ -1,6 +1,7 @@
 import { ensureApiKey, openaiClient } from "../config/openai";
 import { ClassifiedDocument, PortalDocument } from "./types";
 import { httpFetch } from "../mcp/httpFetchTool";
+import { extractFirstText } from "./utils";
 
 export async function watchPortals(): Promise<PortalDocument[]> {
   ensureApiKey();
@@ -18,7 +19,7 @@ export async function classifyDocument(
     input: `Classifique o documento: ${document.title}`,
   });
 
-  const rationale = completion.output[0].content[0].text || "";
+  const rationale = extractFirstText(completion.output);
   return {
     vectorStoreId: "legislacao-nacional-ibs-cbs-is",
     tags: [document.portalId],

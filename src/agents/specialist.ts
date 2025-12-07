@@ -1,5 +1,6 @@
 import { ensureApiKey, openaiClient } from "../config/openai";
 import { AgentId, UserQueryRequest, UserQueryResponse } from "./types";
+import { extractFirstText } from "./utils";
 
 export async function invokeSpecialist(
   agent: AgentId,
@@ -12,6 +13,6 @@ export async function invokeSpecialist(
     input: `Agente: ${agent}\nPergunta: ${input.question}`,
   });
 
-  const answer = completion.output[0].content[0].text || "";
+  const answer = extractFirstText(completion.output);
   return { answer };
 }
