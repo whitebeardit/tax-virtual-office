@@ -1,8 +1,9 @@
 import fs from "fs";
 import path from "path";
-import YAML from "js-yaml";
+import * as YAML from "js-yaml";
 
-import { ensureApiKey, openaiClient } from "../config/openai";
+import crypto from "crypto";
+
 import {
   ClassifiedDocument,
   PortalDefinition,
@@ -10,7 +11,6 @@ import {
   VectorStoreDefinition,
 } from "./types";
 import { httpFetch } from "../mcp/httpFetchTool";
-import { extractFirstText } from "./utils";
 
 interface PortalsFile {
   portals: PortalDefinition[];
@@ -26,9 +26,18 @@ const VECTORSTORES_FILE_PATH = path.resolve(
   "agents",
   "vectorstores.yaml"
 );
+const PORTAL_CACHE_DIR = path.resolve(process.cwd(), "agents", ".cache");
+const PORTAL_STATE_FILE = path.resolve(PORTAL_CACHE_DIR, "portal-state.json");
+const DOWNLOAD_CACHE_DIR = path.resolve(PORTAL_CACHE_DIR, "downloads");
+
+interface PortalStateFile {
+  lastRun?: string;
+  seen: Record<string, string[]>;
+}
 
 let cachedPortals: PortalDefinition[] | undefined;
 let cachedVectorStores: VectorStoreDefinition[] | undefined;
+let cachedPortalState: PortalStateFile | undefined;
 
 function loadPortalsCatalog(): PortalDefinition[] {
   if (cachedPortals) return cachedPortals;
@@ -61,41 +70,35 @@ function loadVectorStoresCatalog(): VectorStoreDefinition[] {
 }
 
 export async function watchPortals(): Promise<PortalDocument[]> {
-  ensureApiKey();
   const portals = loadPortalsCatalog();
   const discovered: PortalDocument[] = [];
+  const state = loadPortalState();
 
   for (const portal of portals) {
     const listingUrl = new URL(portal.listingPath, portal.baseUrl).toString();
-    await httpFetch(listingUrl);
+    const html = await httpFetch(listingUrl);
+    const parsed = parsePortalListing(portal, html, listingUrl);
+    const fresh = parsed.filter((doc) => !hasSeen(state, doc));
 
-    discovered.push({
-      portalId: portal.id,
-      portalType: portal.type,
-      title: `Atualização detectada em ${portal.name}`,
-      url: listingUrl,
-      publishedAt: new Date().toISOString(),
-    });
+    fresh.forEach((doc) => rememberDocument(state, doc));
+    logPortalMetrics(portal, parsed.length, fresh.length);
+    discovered.push(...fresh);
   }
 
+  persistPortalState(state);
   return discovered;
 }
 
 export async function classifyDocument(
   document: PortalDocument
 ): Promise<ClassifiedDocument> {
-  ensureApiKey();
-  const completion = await openaiClient.responses.create({
-    model: "gpt-4o-mini",
-    input: `Classifique o documento: ${document.title}`,
-  });
-
-  const rationaleFromModel = extractFirstText(completion.output);
-  const vectorStoreId = chooseVectorStore(document);
+  const { vectorStoreId, score, rationaleFromHeuristics } =
+    scoreVectorStores(document);
   return {
     vectorStoreId,
     tags: buildTags(document),
-    rationale: rationaleFromModel,
+    rationale: rationaleFromHeuristics,
+    score,
   };
 }
 
@@ -104,9 +107,19 @@ export async function uploadDocument(
   classification: ClassifiedDocument
 ): Promise<void> {
   const content = await httpFetch(document.url);
+  if (!fs.existsSync(DOWNLOAD_CACHE_DIR)) {
+    fs.mkdirSync(DOWNLOAD_CACHE_DIR, { recursive: true });
+  }
+
+  const fileName = `${classification.vectorStoreId}-${
+    document.contentHash || Date.now()
+  }.html`;
+  const localPath = path.join(DOWNLOAD_CACHE_DIR, fileName);
+  fs.writeFileSync(localPath, content);
   console.info("Documento baixado", {
     portalId: document.portalId,
     bytes: content.length,
+    localPath,
   });
 
   console.info("Upload concluído", {
@@ -145,5 +158,184 @@ function buildTags(document: PortalDocument): string[] {
   if (document.portalType) {
     tags.push(document.portalType);
   }
+  if (document.externalId) {
+    tags.push(document.externalId);
+  }
   return tags;
+}
+
+function loadPortalState(): PortalStateFile {
+  if (cachedPortalState) return cachedPortalState;
+
+  if (!fs.existsSync(PORTAL_CACHE_DIR)) {
+    fs.mkdirSync(PORTAL_CACHE_DIR, { recursive: true });
+  }
+
+  if (!fs.existsSync(PORTAL_STATE_FILE)) {
+    cachedPortalState = { seen: {}, lastRun: undefined };
+    return cachedPortalState;
+  }
+
+  const content = fs.readFileSync(PORTAL_STATE_FILE, "utf-8");
+  cachedPortalState = JSON.parse(content) as PortalStateFile;
+  if (!cachedPortalState.seen) {
+    cachedPortalState.seen = {};
+  }
+  return cachedPortalState;
+}
+
+function persistPortalState(state: PortalStateFile) {
+  const data = { ...state, lastRun: new Date().toISOString() };
+  fs.writeFileSync(PORTAL_STATE_FILE, JSON.stringify(data, null, 2));
+}
+
+function parsePortalListing(
+  portal: PortalDefinition,
+  html: string,
+  listingUrl: string
+): PortalDocument[] {
+  const anchorRegex = /<a[^>]*href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gims;
+  const documents: PortalDocument[] = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = anchorRegex.exec(html))) {
+    const href = match[1];
+    const rawTitle = match[2];
+    const title = stripTags(rawTitle) || portal.name;
+
+    const resolvedUrl = new URL(href, portal.baseUrl).toString();
+    const contentHash = buildContentHash(portal.id, resolvedUrl, title);
+    const publishedAt = extractPublishedAt(rawTitle) || new Date().toISOString();
+
+    documents.push({
+      portalId: portal.id,
+      portalType: portal.type,
+      title,
+      url: resolvedUrl,
+      publishedAt,
+      detectedAt: new Date().toISOString(),
+      contentHash,
+      sourceListing: listingUrl,
+    });
+  }
+
+  if (documents.length === 0) {
+    documents.push({
+      portalId: portal.id,
+      portalType: portal.type,
+      title: `Atualização detectada em ${portal.name}`,
+      url: listingUrl,
+      publishedAt: new Date().toISOString(),
+      detectedAt: new Date().toISOString(),
+      contentHash: buildContentHash(portal.id, listingUrl, portal.name),
+      sourceListing: listingUrl,
+    });
+  }
+
+  return documents;
+}
+
+function stripTags(value: string): string {
+  return value.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+}
+
+function extractPublishedAt(rawTitle: string): string | undefined {
+  const dateRegex = /(\d{2}\/\d{2}\/\d{4})/;
+  const match = rawTitle.match(dateRegex);
+  if (match) {
+    const [day, month, year] = match[1].split("/");
+    return new Date(`${year}-${month}-${day}`).toISOString();
+  }
+  return undefined;
+}
+
+function buildContentHash(portalId: string, url: string, title: string): string {
+  return crypto
+    .createHash("sha256")
+    .update(`${portalId}:${url}:${title}`)
+    .digest("hex");
+}
+
+function hasSeen(state: PortalStateFile, doc: PortalDocument): boolean {
+  const dedupKey = doc.contentHash || doc.url;
+  const seen = state.seen[doc.portalId] || [];
+  return seen.includes(dedupKey);
+}
+
+function rememberDocument(state: PortalStateFile, doc: PortalDocument) {
+  const dedupKey = doc.contentHash || doc.url;
+  if (!state.seen[doc.portalId]) {
+    state.seen[doc.portalId] = [];
+  }
+
+  state.seen[doc.portalId].push(dedupKey);
+}
+
+function logPortalMetrics(
+  portal: PortalDefinition,
+  parsedCount: number,
+  freshCount: number
+) {
+  console.info("Portal varrido", {
+    portalId: portal.id,
+    parsed: parsedCount,
+    novos: freshCount,
+  });
+}
+
+function scoreVectorStores(document: PortalDocument) {
+  const catalog = loadVectorStoresCatalog();
+  const normalizedTitle = document.title.toLowerCase();
+  const rationale: string[] = [];
+
+  const scores = catalog.map((store) => {
+    let score = 0;
+
+    if (document.portalType === "estadual" &&
+        store.id === "documentos-estaduais-ibc-cbs") {
+      score += 3;
+      rationale.push("Portal estadual prioriza store de documentos estaduais.");
+    }
+
+    if (normalizedTitle.includes("nf-e") || normalizedTitle.includes("nfe")) {
+      if (store.id.includes("nfe")) {
+        score += 4;
+        rationale.push("Título menciona NF-e, priorizando stores especializados.");
+      }
+      if (store.id === "normas-tecnicas-nfe-nfce-cte") {
+        score += 2;
+      }
+    }
+
+    if (normalizedTitle.includes("nfce") || normalizedTitle.includes("nfc-e")) {
+      if (store.id === "normas-tecnicas-nfe-nfce-cte") {
+        score += 4;
+        rationale.push("Título cita NFC-e; armazenar em normas técnicas.");
+      }
+    }
+
+    if (normalizedTitle.includes("ajuste") || normalizedTitle.includes("sinief")) {
+      if (store.id === "legislacao-nacional-ibs-cbs-is") {
+        score += 3;
+        rationale.push("Ajustes SINIEF vão para legislação nacional.");
+      }
+    }
+
+    if (store.description.toLowerCase().includes(document.portalType || "")) {
+      score += 1;
+    }
+
+    return { id: store.id, score };
+  });
+
+  const best = scores.sort((a, b) => b.score - a.score)[0];
+  const vectorStoreId = best?.id || chooseVectorStore(document);
+
+  return {
+    vectorStoreId,
+    score: best?.score || 0,
+    rationaleFromHeuristics: rationale.length
+      ? rationale.join(" ")
+      : "Roteamento por heurísticas de título e tipo de portal.",
+  };
 }

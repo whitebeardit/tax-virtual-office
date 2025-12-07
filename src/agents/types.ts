@@ -31,6 +31,10 @@ export interface PortalDocument {
   title: string;
   url: string;
   publishedAt?: string;
+  detectedAt?: string;
+  contentHash?: string;
+  externalId?: string;
+  sourceListing?: string;
 }
 
 export interface PortalDefinition {
@@ -50,4 +54,5 @@ export interface ClassifiedDocument {
   vectorStoreId: string;
   tags: string[];
   rationale?: string;
+  score?: number;
 }
