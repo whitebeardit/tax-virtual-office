@@ -1,15 +1,17 @@
+import { logger } from '../utils/logger.js';
+
 export function logInfo(message: string, payload?: unknown): void {
   if (payload) {
-    console.info(message, payload);
+    logger.info(payload, message);
   } else {
-    console.info(message);
+    logger.info(message);
   }
 }
 
 export function logError(message: string, payload?: unknown): void {
   if (payload) {
-    console.error(message, payload);
+    logger.error(payload, message);
   } else {
-    console.error(message);
+    logger.error(message);
   }
 }
