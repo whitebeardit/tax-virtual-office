@@ -1,7 +1,7 @@
 import express from "express";
-import { env } from "../config/env";
-import { registerQueryRoutes } from "./routes/query.routes";
-import { registerAdminRoutes } from "./routes/admin.routes";
+import { env } from "../config/env.js";
+import { registerQueryRoutes } from "./routes/query.routes.js";
+import { registerAdminRoutes } from "./routes/admin.routes.js";
 
 export async function startHttpServer() {
   const app = express();

@@ -1,11 +1,11 @@
-import { ensureApiKey, openaiClient } from "../config/openai";
-import { getAgentDefinition } from "./registry";
+import { ensureApiKey, openaiClient } from "../config/openai.js";
+import { getAgentDefinition } from "./registry.js";
 import {
   AgentTraceExample,
   UserQueryRequest,
   UserQueryResponse,
-} from "./types";
-import { extractFirstText } from "./utils";
+} from "./types.js";
+import { extractFirstText } from "./utils.js";
 
 export async function invokeCoordinator(
   input: UserQueryRequest
@@ -17,25 +17,21 @@ export async function invokeCoordinator(
   const messages = [
     {
       role: "system" as const,
-      content: [{ type: "input_text" as const, text: coordinator.instructions }],
+      content: coordinator.instructions,
     },
     {
       role: "user" as const,
-      content: [
-        {
-          type: "input_text" as const,
-          text: `Pergunta: ${input.question}\nContexto: ${input.context || ""}`,
-        },
-      ],
+      content: `Pergunta: ${input.question}\nContexto: ${input.context || ""}`,
     },
   ];
 
-  const completion = await openaiClient.responses.create({
+  const completion = await openaiClient.chat.completions.create({
     model: coordinator.model,
-    input: messages,
+    messages: messages,
   });
 
-  const answer = extractFirstText(completion.output);
+  const answer = extractFirstText(completion);
+  
   return {
     answer,
     plan: buildInstrumentedPlan(input.question),
@@ -69,7 +65,7 @@ function buildTraceExamples(): AgentTraceExample[] {
     },
     {
       agentId: "specialist-nfe" as const,
-      calledTools: ["file-search:docs/Agents.md"],
+      calledTools: ["file-search:docs/AGENTS.md"],
       sample:
         "[specialist-nfe] file-search → extraiu regras de destaque de ICMS do FAQ do portal; consolidou notas e citou seção específica na resposta final.",
     },

@@ -1,5 +1,5 @@
 import { Express, Request, Response } from "express";
-import { runDailyPortalsScan } from "../../workflows/daily-portals-scan";
+import { runDailyPortalsScan } from "../../workflows/daily-portals-scan.js";
 
 export function registerAdminRoutes(app: Express) {
   app.get("/health", (_req: Request, res: Response) => {

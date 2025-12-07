@@ -1,6 +1,6 @@
-import { ensureApiKey, openaiClient } from "../config/openai";
-import { AgentId, UserQueryRequest, UserQueryResponse } from "./types";
-import { extractFirstText } from "./utils";
+import { ensureApiKey, openaiClient } from "../config/openai.js";
+import { AgentId, UserQueryRequest, UserQueryResponse } from "./types.js";
+import { extractFirstText } from "./utils.js";
 
 export async function invokeSpecialist(
   agent: AgentId,
@@ -8,11 +8,16 @@ export async function invokeSpecialist(
 ): Promise<UserQueryResponse> {
   ensureApiKey();
 
-  const completion = await openaiClient.responses.create({
+  const completion = await openaiClient.chat.completions.create({
     model: "gpt-4o-mini",
-    input: `Agente: ${agent}\nPergunta: ${input.question}`,
+    messages: [
+      {
+        role: "user",
+        content: `Agente: ${agent}\nPergunta: ${input.question}`,
+      },
+    ],
   });
 
-  const answer = extractFirstText(completion.output);
+  const answer = extractFirstText(completion);
   return { answer };
 }

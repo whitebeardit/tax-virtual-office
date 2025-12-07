@@ -1,11 +1,16 @@
 export function extractFirstText(
-  output: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }>
+  completion: { choices?: Array<{ message?: { content?: string | null } }> }
 ): string {
-  const message = output.find((item) => item?.type === "message");
-  if (!message || !Array.isArray(message.content)) {
+  if (!completion.choices || completion.choices.length === 0) {
     return "";
   }
 
-  const textPart = message.content.find((part) => part?.type === "text");
-  return typeof textPart?.text === "string" ? textPart.text : "";
+  const firstChoice = completion.choices[0];
+  if (!firstChoice.message || !firstChoice.message.content) {
+    return "";
+  }
+
+  return typeof firstChoice.message.content === "string"
+    ? firstChoice.message.content
+    : "";
 }

@@ -1,5 +1,5 @@
 import { Express, Request, Response } from "express";
-import { runUserQueryWorkflow } from "../../workflows/user-query";
+import { runUserQueryWorkflow } from "../../workflows/user-query.js";
 
 export function registerQueryRoutes(app: Express) {
   app.post("/query", async (req: Request, res: Response) => {

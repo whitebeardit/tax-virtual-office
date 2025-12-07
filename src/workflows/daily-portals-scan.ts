@@ -1,5 +1,5 @@
-import { classifyDocument, uploadDocument, watchPortals } from "../agents/maintenance";
-import { PortalDocument } from "../agents/types";
+import { classifyDocument, uploadDocument, watchPortals } from "../agents/maintenance.js";
+import { PortalDocument } from "../agents/types.js";
 
 export async function runDailyPortalsScan(): Promise<void> {
   const newDocuments = await watchPortals();

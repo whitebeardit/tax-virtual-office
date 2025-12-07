@@ -1,5 +1,5 @@
-import { startHttpServer } from "./server/http-server";
-import { runDailyPortalsScan } from "./workflows/daily-portals-scan";
+import { startHttpServer } from "./server/http-server.js";
+import { runDailyPortalsScan } from "./workflows/daily-portals-scan.js";
 
 async function main() {
   const mode = process.env.APP_MODE || "api";
