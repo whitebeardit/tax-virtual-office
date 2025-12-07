@@ -1,39 +1,27 @@
-import { ensureApiKey, openaiClient } from "../config/openai.js";
-import { getAgentDefinition } from "./registry.js";
+import { run } from "@openai/agents";
+import { ensureApiKey } from "../config/openai.js";
 import {
   AgentTraceExample,
   UserQueryRequest,
   UserQueryResponse,
 } from "./types.js";
-import { extractFirstText } from "./utils.js";
+import { createCoordinatorAgent } from "./agents-sdk.js";
 
 export async function invokeCoordinator(
   input: UserQueryRequest
 ): Promise<UserQueryResponse> {
   ensureApiKey();
 
-  const coordinator = getAgentDefinition("coordinator");
+  const coordinator = createCoordinatorAgent();
+  
+  const userInput = input.context
+    ? `Pergunta: ${input.question}\nContexto: ${input.context}`
+    : input.question;
 
-  const messages = [
-    {
-      role: "system" as const,
-      content: coordinator.instructions,
-    },
-    {
-      role: "user" as const,
-      content: `Pergunta: ${input.question}\nContexto: ${input.context || ""}`,
-    },
-  ];
-
-  const completion = await openaiClient.chat.completions.create({
-    model: coordinator.model,
-    messages: messages,
-  });
-
-  const answer = extractFirstText(completion);
+  const result = await run(coordinator, userInput);
   
   return {
-    answer,
+    answer: result.finalOutput || "Não foi possível gerar uma resposta.",
     plan: buildInstrumentedPlan(input.question),
     agentTraces: buildTraceExamples(),
     sources: [

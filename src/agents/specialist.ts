@@ -1,23 +1,23 @@
-import { ensureApiKey, openaiClient } from "../config/openai.js";
+import { run } from "@openai/agents";
+import { ensureApiKey } from "../config/openai.js";
 import { AgentId, UserQueryRequest, UserQueryResponse } from "./types.js";
-import { extractFirstText } from "./utils.js";
+import { createSpecialistAgent } from "./agents-sdk.js";
 
 export async function invokeSpecialist(
-  agent: AgentId,
+  agentId: AgentId,
   input: UserQueryRequest
 ): Promise<UserQueryResponse> {
   ensureApiKey();
 
-  const completion = await openaiClient.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "user",
-        content: `Agente: ${agent}\nPergunta: ${input.question}`,
-      },
-    ],
-  });
+  const specialist = createSpecialistAgent(agentId);
+  
+  const userInput = input.context
+    ? `Pergunta: ${input.question}\nContexto: ${input.context}`
+    : input.question;
 
-  const answer = extractFirstText(completion);
-  return { answer };
+  const result = await run(specialist, userInput);
+  
+  return {
+    answer: result.finalOutput || "Não foi possível gerar uma resposta.",
+  };
 }
