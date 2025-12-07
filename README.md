@@ -64,3 +64,9 @@ Uso básico:
 - `POST /query` — recebe pergunta do usuário e aciona o agente coordenador.
 - `GET /health` — healthcheck simples.
 - `POST /admin/run-daily` — dispara fluxo diário de monitoramento.
+
+## Estado atual da implementação
+
+- O workflow de consulta (`/query`) apenas invoca o OpenAI Responses API com um prompt simples e retorna um plano estático, sem orquestração real dos especialistas definidos em `agents/agents.yaml`. 【F:src/agents/coordinator.ts†L5-L20】
+- A varredura de portais (`runDailyPortalsScan` e `/admin/run-daily`) ainda é um esqueleto: `watchPortals` retorna sempre uma lista vazia após um `httpFetch` de healthcheck e `uploadDocument` só registra no log. 【F:src/workflows/daily-portals-scan.ts†L1-L14】【F:src/agents/maintenance.ts†L6-L29】
+- A classificação de documentos usa um prompt genérico e sempre devolve o mesmo `vectorStoreId` em vez de consultar o catálogo de `agents/vectorstores.yaml`. 【F:src/agents/maintenance.ts†L13-L27】
