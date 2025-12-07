@@ -34,8 +34,8 @@ export const webTool = tool({
   name: "web",
   description: "Consulta a sites oficiais (.gov.br, .fazenda.gov.br). Use apenas para dados objetivos (datas, números de lei, URLs oficiais).",
   parameters: z.object({
-    url: z.string().url().describe("URL do site oficial a consultar"),
-    query: z.string().optional().describe("Query opcional para busca"),
+    url: z.string().describe("URL do site oficial a consultar (deve ser uma URL válida)"),
+    query: z.string().optional().nullable().describe("Query opcional para busca"),
   }),
   execute: async (input) => {
     try {
@@ -58,13 +58,21 @@ export const loggerTool = tool({
   parameters: z.object({
     level: z.enum(["info", "error"]).default("info"),
     message: z.string().describe("Mensagem a registrar"),
-    payload: z.record(z.unknown()).optional().describe("Dados adicionais"),
+    payload: z.string().optional().nullable().describe("Dados adicionais em formato JSON string (opcional)"),
   }),
   execute: async (input) => {
+    let parsedPayload: unknown = undefined;
+    if (input.payload) {
+      try {
+        parsedPayload = JSON.parse(input.payload);
+      } catch {
+        parsedPayload = input.payload;
+      }
+    }
     if (input.level === "error") {
-      logError(input.message, input.payload);
+      logError(input.message, parsedPayload);
     } else {
-      logInfo(input.message, input.payload);
+      logInfo(input.message, parsedPayload);
     }
     return `Log registrado: ${input.message}`;
   },
@@ -77,7 +85,7 @@ export const httpFetchTool = tool({
   name: "http-fetch",
   description: "Obter HTML de páginas de portais fiscais.",
   parameters: z.object({
-    url: z.string().url().describe("URL da página a buscar"),
+    url: z.string().describe("URL da página a buscar (deve ser uma URL válida)"),
   }),
   execute: async (input) => {
     const content = await httpFetch(input.url);
@@ -93,7 +101,7 @@ export const httpDownloadTool = tool({
   name: "http-download",
   description: "Baixar arquivos de documentos fiscais.",
   parameters: z.object({
-    url: z.string().url().describe("URL do arquivo a baixar"),
+    url: z.string().describe("URL do arquivo a baixar (deve ser uma URL válida)"),
     outputDir: z.string().describe("Diretório de destino"),
   }),
   execute: async (input) => {
@@ -112,7 +120,7 @@ export const kvStateTool = tool({
   parameters: z.object({
     operation: z.enum(["get", "set"]).describe("Operação a realizar"),
     key: z.string().describe("Chave do estado"),
-    value: z.string().optional().describe("Valor a armazenar (apenas para 'set')"),
+    value: z.string().optional().nullable().describe("Valor a armazenar (apenas para 'set')"),
   }),
   execute: async (input) => {
     if (input.operation === "get") {
