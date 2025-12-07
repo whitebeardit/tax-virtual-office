@@ -1,8 +1,8 @@
 # Next steps
 
 ## Orquestração de agentes
-- Conectar o workflow de consulta (`runUserQueryWorkflow`) aos agentes descritos em `agents/agents.yaml`, carregando prompts de `agents/prompts/*.system.md` em vez do prompt estático atual.
-- Criar uma camada para seleção dinâmica de especialistas e ferramentas (ex.: file-search, http-fetch) e devolver planos e fontes reais na resposta.
+- Evoluir o workflow de consulta (`runUserQueryWorkflow`) para, a partir das definições já carregadas pelo registry, selecionar dinamicamente especialistas e ferramentas (ex.: file-search, http-fetch) e retornar planos e fontes reais.
+- Encadear chamadas ao coordinator e especialistas, orquestrando paralelismo quando fizer sentido e retornando um rastro de decisões na resposta ao usuário.
 - Adicionar testes de integração que validem o ciclo pergunta → coordinator → especialistas, usando fixtures ou mocks do OpenAI Responses API.
 
 ## Varredura de portais
