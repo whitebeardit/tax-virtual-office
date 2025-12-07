@@ -8,7 +8,14 @@ export function registerQueryRoutes(app: Express) {
       res.json(result);
     } catch (err) {
       console.error("/query failed", err);
-      res.status(500).json({ error: "internal_error" });
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      const errorStack = err instanceof Error ? err.stack : undefined;
+      console.error("Error details:", { errorMessage, errorStack });
+      res.status(500).json({ 
+        error: "internal_error",
+        message: errorMessage,
+        ...(process.env.NODE_ENV === "development" && { stack: errorStack })
+      });
     }
   });
 }
