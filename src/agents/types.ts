@@ -23,6 +23,14 @@ export interface UserQueryResponse {
   answer: string;
   sources?: string[];
   plan?: string[];
+  agentTraces?: AgentTraceExample[];
+}
+
+export interface AgentTraceExample {
+  agentId: AgentId;
+  calledTools: string[];
+  sample: string;
+  note?: string;
 }
 
 export interface PortalDocument {

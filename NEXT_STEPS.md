@@ -3,7 +3,8 @@
 ## Orquestração de agentes
 - Encadear chamadas reais ao coordinator e especialistas, orquestrando paralelismo quando fizer sentido e retornando um rastro de decisões na resposta ao usuário.
 - Adicionar testes de integração que validem o ciclo pergunta → coordinator → especialistas, usando fixtures ou mocks do OpenAI Responses API.
-- Instrumentar o plano retornado pelo coordinator com fontes reais (file-search/web) e exemplos de traces dos agentes.
+- Persistir os traces instrumentados (incluindo chamadas file-search/web) em storage consultável e anexá-los ao response `/query`.
+- Expor endpoint/flag de depuração para retornar o trace bruto dos agentes e validar se as fontes usadas batem com o plano consolidado.
 
 ## Varredura de portais
 - Evoluir `watchPortals` com parsers específicos por portal (ex.: seletor CSS, tabelas) e quedas de rede toleradas, reaproveitando o cache de hashes persistido para evitar reprocessamento.
