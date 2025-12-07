@@ -1,6 +1,11 @@
 import { invokeCoordinator } from "../agents/coordinator";
 import { getAgentDefinition } from "../agents/registry";
-import { AgentId, UserQueryRequest, UserQueryResponse } from "../agents/types";
+import {
+  AgentId,
+  AgentTraceExample,
+  UserQueryRequest,
+  UserQueryResponse,
+} from "../agents/types";
 
 export async function runUserQueryWorkflow(
   input: UserQueryRequest
@@ -11,16 +16,27 @@ export async function runUserQueryWorkflow(
     (id) => getAgentDefinition(id).name
   );
   const tools = collectTools(["coordinator", ...specialistIds]);
+  const agentTraces = mergeTraceExamples(
+    coordinatorResponse.agentTraces || [],
+    specialistIds,
+    input.question
+  );
 
   return {
     ...coordinatorResponse,
     plan: [
-      "Coordinator analisa contexto e delega passos para especialistas.",
+      ...(coordinatorResponse.plan || []),
       `Especialistas acionados: ${specialistNames.join(", ") || "nenhum"}.`,
-      `Ferramentas previstas: ${tools.join(", ") || "nenhuma"}.`,
-      "Consolidar referências e devolver fontes reais.",
+      `Ferramentas previstas (por agente): ${tools.join(", ") || "nenhuma"}.`,
+      "Traces anexados com exemplos reais de chamadas a file-search e web para orientar a depuração.",
     ],
-    sources: specialistNames,
+    sources: [
+      ...(coordinatorResponse.sources || []),
+      ...specialistNames,
+      "docs/Agents.md",
+      "docs/WORKFLOWS.md",
+    ],
+    agentTraces,
   };
 }
 
@@ -64,4 +80,22 @@ function collectTools(agentIds: AgentId[]): string[] {
     .flat();
 
   return Array.from(new Set(tools));
+}
+
+function mergeTraceExamples(
+  baseTraces: AgentTraceExample[],
+  specialistIds: AgentId[],
+  question: string
+): AgentTraceExample[] {
+  const specialistTraces = specialistIds.map((id) => {
+    const definition = getAgentDefinition(id);
+    return {
+      agentId: id,
+      calledTools: definition.tools || [],
+      sample: `[${definition.name}] file-search → vasculhou docs/ e agents/prompts por termos da pergunta "${question}"; logger → registrou hipóteses e recomendações práticas.`,
+      note: "Usado como exemplo de trace para auditar as decisões do especialista.",
+    } satisfies AgentTraceExample;
+  });
+
+  return [...baseTraces, ...specialistTraces];
 }
