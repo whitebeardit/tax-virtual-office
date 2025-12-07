@@ -1,0 +1,267 @@
+---
+description: Add individual task to the project task list
+---
+
+# Add Individual Task
+
+> Alias available: `/wb-tm-add-task` calls this same workflow for Task Master training contexts.
+
+## Purpose
+
+This command adds an individual task to the project task list, allowing flexibility to add specific tasks without creating a complete PRD.
+
+## When to Use
+
+✅ **Use this command when**:
+- Need to add a specific task quickly
+- Working on improvement or small feature
+- Doesn't justify creating a complete PRD
+- Want to add task point-by-point during development
+
+❌ **Don't use when**:
+- Need to create multiple related tasks (use `/wb-create-prd` + `/wb-parse-prd`)
+- Starting a new project (use `/wb-quick-start`)
+
+## Execution Process
+
+### 1. Information Collection
+
+**Ask the user**:
+
+1. **Task description**
+   - "Describe the task you want to add (detailed)"
+   - Example: "Implement search functionality with category filters"
+
+2. **Priority**
+   - "What is the priority? (high/medium/low)"
+   - Default: medium
+
+3. **Analyze codebase?**
+   - "Analyze codebase for context and alignment?"
+   - **Yes**: Searches for existing patterns and aligns task
+   - **No**: Creates standalone task
+
+4. **Known dependencies?**
+   - "Does task depend on any other task? (IDs separated by comma)"
+   - Example: "2,5" or leave empty for auto-detect
+
+### 2. Codebase Analysis (Optional)
+
+**If user chose analysis**:
+
+Follow workflow: [@ai_knowledge_base/task-master/workflows/codebase-analysis.md](mdc:modules/capabilities/task-master/workflows/codebase-analysis.md)
+
+**Search for**:
+- Existing similar implementations
+- Project patterns and conventions
+- Libraries and frameworks in use
+- Current architecture
+
+**Result**: Additional context to generate aligned task
+
+### 3. Task Generation
+
+**Apply addition prompt**:
+
+Follow: [@ai_knowledge_base/task-master/prompts/add-task-prompt.md](mdc:modules/capabilities/task-master/prompts/add-task-prompt.md)
+
+**Prompt System**:
+```
+You are a helpful assistant that creates well-structured tasks for a software development project. Generate a single new task based on the user's description, adhering strictly to the provided JSON schema.
+
+**Task Schema**:
+{
+  "id": number,           // Next available ID
+  "title": string,        // Clear, action-oriented
+  "description": string,  // 1-2 sentence summary
+  "status": "pending",    // Always pending for new
+  "dependencies": number[],  // Prerequisite task IDs
+  "priority": string,     // Based on user input
+  "details": string,      // Implementation guidance
+  "testStrategy": string  // Verification approach
+}
+
+**Dependency Selection Guidelines**:
+1. Select based on logical requirements - what must be completed before this task
+2. Prioritize semantically related tasks
+3. Consider direct and indirect dependencies
+4. Avoid unnecessary dependencies
+5. Prefer completed tasks when possible
+6. Consider foundation tasks (1-5)
+7. Recent tasks (higher IDs) may be more relevant
+
+{{#if hasCodebaseAnalysis}}
+## IMPORTANT: Codebase Analysis Required
+
+Before generating task details:
+1. Use Glob to explore relevant files
+2. Use Grep to search for existing implementations
+3. Use Read to examine key files
+4. Understand current patterns and conventions
+
+Generate task that:
+- Aligns with existing architecture
+- Uses established patterns
+- Integrates with current code
+- Follows project conventions
+
+Project Root: {{projectRoot}}
+{{/if}}
+```
+
+**Prompt User**:
+```
+Generate a task for: "{{userPrompt}}"
+
+{{#if hasCodebaseAnalysis}}
+Codebase Context:
+{{codebaseAnalysis}}
+
+{{/if}}
+
+{{#if existingTasks}}
+Existing Tasks (for dependency reference):
+{{existingTasks}}
+{{/if}}
+
+Generate a single task object following the schema.
+Set dependencies appropriately based on logical requirements.
+```
+
+### 4. Auto-Detect Dependencies
+
+**Analisar**:
+- Descrição da task
+- Tasks existentes no projeto
+- Relações lógicas e semânticas
+
+**Dependency rules**:
+- Include only truly required dependencies
+- Prioritize semantically related tasks
+- Avoid unnecessary dependencies
+- Consider task status (prefer done)
+
+### 5. Task Validation
+
+**Verify**:
+- ✅ Unique and sequential ID
+- ✅ Actionable and clear title
+- ✅ Descriptive description
+- ✅ Valid dependencies (no circular)
+- ✅ Appropriate priority
+- ✅ Actionable details
+- ✅ TestStrategy defined
+
+### 6. Save Task
+
+**Add to list**:
+- Location: `.taskmaster/tasks/tasks.json`
+- Tag: current (or 'master' if first)
+- Preserve existing tasks
+- Maintain sequential ID order
+
+### 7. Output
+
+**Present created task**:
+
+```markdown
+✅ Task created successfully!
+
+📋 Task Details:
+- ID: {{id}}
+- Title: {{title}}
+- Description: {{description}}
+- Priority: {{priority}}
+- Status: {{status}}
+- Dependencies: {{dependencies}}
+
+📝 Implementation:
+{{details}}
+
+🧪 Testing:
+{{testStrategy}}
+
+🔗 Next steps:
+   - Execute `/wb-list` to view all tasks
+   - Execute `/wb-next` to prioritize work
+```
+
+## Reference Rules
+
+**Main Rules**:
+- [@ai_knowledge_base/task-master/prompts/add-task-prompt.md](mdc:modules/capabilities/task-master/prompts/add-task-prompt.md)
+- [@ai_knowledge_base/task-master/task-generation/task-creation-rules.md](mdc:modules/capabilities/task-master/task-generation/task-creation-rules.md)
+- [@ai_knowledge_base/task-master/task-generation/dependency-management.md](mdc:modules/capabilities/task-master/task-generation/dependency-management.md)
+
+**Codebase Analysis**:
+- [@ai_knowledge_base/task-master/workflows/codebase-analysis.md](mdc:modules/capabilities/task-master/workflows/codebase-analysis.md)
+
+## Usage Example
+
+**Commands**: `/wb-add-task` (primary) | `/wb-tm-add-task` (training alias)
+
+**Questions and Answers**:
+```
+1. Task description?
+   → "Implement search functionality with category and price filters"
+
+2. Priority?
+   → high
+
+3. Analyze codebase?
+   → Yes
+
+4. Dependencies?
+   → 6,7 (or leave empty for auto)
+```
+
+**Codebase Analysis**:
+```
+✅ Found: Product components
+✅ Pattern: React hooks + TanStack Query
+✅ Already exists: Basic search without filters
+✅ Relevant: src/components/ProductList.tsx
+```
+
+**Generated Task**:
+```json
+{
+  "id": 9,
+  "title": "Implement Product Search with Category and Price Filters",
+  "description": "Add advanced filtering to existing search functionality with category dropdown and price range slider.",
+  "status": "pending",
+  "dependencies": [6, 7],
+  "priority": "high",
+  "details": "1. Extend existing ProductList component\n2. Add category filter dropdown (use existing categories)\n3. Add price range slider (min-max, 0-1000)\n4. Update TanStack Query useQuery to filter results\n5. Maintain URL params for filter state\n6. Add clear filters button\n7. Show result count\n\nFollow existing patterns:\n- Use ProductList.tsx as base\n- Use useSearchParams from react-router-dom\n- Integrate with existing useProducts hook",
+  "testStrategy": "1. Test search with category filter\n2. Test price range filter\n3. Test combined filters\n4. Test clear filters button\n5. Test URL state persistence\n6. Unit test filter logic\n7. Integration test with API"
+}
+```
+
+**Output**:
+```
+✅ Task created successfully!
+
+📋 Task Details:
+- ID: 9
+- Title: Implement Product Search with Category and Price Filters
+- Description: Add advanced filtering to existing search functionality...
+- Priority: high
+- Status: pending
+- Dependencies: Task 6 (✅), Task 7 (✅)
+
+📝 Implementation:
+1. Extend existing ProductList component
+2. Add category filter dropdown
+3. Add price range slider
+...
+
+🧪 Testing:
+1. Test search with category filter
+2. Test price range filter
+...
+
+🔗 Next steps:
+   Dependencies ready! Can start implementation
+   Execute `/wb-next` to see this task
+```
+

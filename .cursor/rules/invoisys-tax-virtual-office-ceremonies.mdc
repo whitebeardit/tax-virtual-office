@@ -1,0 +1,25 @@
+---
+description: Cadence and facilitation guidelines for core agile ceremonies at INVOISYS Tax Virtual Office.
+---
+
+# INVOISYS Tax Virtual Office Ceremony Guide
+
+## Daily Stand-up
+- Status, bloqueios e próximos passos em até 2 minutos por pessoa.
+- Atualize o board compartilhado e confirme responsáveis por sub-tarefas.
+- Grave impedimentos para follow-up assíncrono com o líder técnico.
+
+## Sprint Review
+- Demonstre incrementos com storytelling focado em valor entregue.
+- /wb-validate-tasks — Validate Tasks: Garanta que tarefas da sprint foram concluídas e documentadas.
+- Colete feedback e registre próximos passos ou débitos técnicos.
+
+## Retrospective
+- Celebre vitórias e agradeça contribuições do time.
+- Levante dados (lead time, throughput, bugs) para embasar discussões.
+- Defina ações concretas com responsáveis e data de revisão.
+
+## Backlog Refinement
+- /wb-analyze-codebase — Analyze Codebase: Levante contexto técnico antes de debater histórias complexas.
+- /wb-create-prd — Create PRD: Atualize seções relevantes com decisões tomadas.
+- Confirme critérios de pronta para desenvolvimento (Definition of Ready).

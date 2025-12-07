@@ -1,0 +1,23 @@
+---
+description: Iteration planning flow for INVOISYS Tax Virtual Office, aligning discovery and delivery.
+---
+
+# INVOISYS Tax Virtual Office Iteration Planning
+
+## Pré-planejamento
+- /wb-analyze-codebase — Analyze Codebase: Atualize o contexto do repositório antes da planning.
+- /wb-create-prd — Create PRD: Documente hipóteses, objetivos e métricas da initiative.
+- /wb-parse-prd — Parse PRD into Tasks: Transforme requisitos em tarefas priorizadas.
+- /wb-analyze-complexity — Analyze Complexity: Classifique esforço para montar capacidade realista.
+
+## Durante a planning
+- Defina objetivo da sprint em conjunto com produto e engenharia.
+- /wb-expand-task — Expand Task: Detalhe histórias complexas antes de comprometer capacidade.
+- Reavalie scripts críticos (`tsc`, `npx -y fastmcp dev src/server.ts`, `ts-node --esm src/server.ts`) para confirmar effort.
+- Confirme disponibilidade do time e slack para bugs/urgências.
+
+## Saídas esperadas
+- Sprint backlog priorizado e alinhado a métricas de negócio.
+- Critérios de aceite por tarefa ou história registrados.
+- Plano de comunicação para stakeholders (demo, métricas).
+- Rituais definidos (daily, review, retro) com responsáveis claros.
