@@ -36,6 +36,9 @@ flowchart TD
     Maintenance --> MCP["Ferramentas MCP - httpFetch"]
     MCP --> Portais[Portais fiscais]
     Maintenance --> VectorStores[Vector stores / file search]
+    
+    API --> Swagger[Swagger UI /api-docs]
+    Swagger --> API
 ```
 
 ## Docker Compose
@@ -57,13 +60,37 @@ Uso básico:
 2. Instale dependências: `npm install`.
 3. Ambiente de desenvolvimento: `npm run dev`.
 4. Build: `npm run build`.
-5. Servidor HTTP: `npm start` (usa `dist/index.js`).
+5. Servidor HTTP: `npm start` (usa `dist/src/index.js`).
 
-## Endpoints básicos
+## Variáveis de Ambiente
 
+Configure as seguintes variáveis no arquivo `.env`:
+
+- `OPENAI_API_KEY` (obrigatória): Chave da API OpenAI para os agentes.
+- `APP_MODE` (opcional): Modo de execução - `api` ou `daily-portals-scan`. Padrão: `api`.
+- `PORT` (opcional): Porta do servidor HTTP. Padrão: `3000`.
+
+Veja `.env.example` para um template completo.
+
+## Testes
+
+- `npm test` — executa todos os testes.
+- `npm run test:watch` — executa testes em modo watch.
+- `npm run test:coverage` — gera relatório de cobertura de código.
+- `npm run test:classifier` — testa o classificador de documentos.
+
+## Endpoints
+
+### Consultas
 - `POST /query` — recebe pergunta do usuário e aciona o agente coordenador.
+
+### Administração
 - `GET /health` — healthcheck simples.
 - `POST /admin/run-daily` — dispara fluxo diário de monitoramento.
+- `POST /admin/classify-document` — classifica um documento fiscal usando o tax-document-classifier.
+
+### Documentação
+- `GET /api-docs` — documentação interativa da API (Swagger UI).
 
 ## Integração com Cursor e Task Master
 
