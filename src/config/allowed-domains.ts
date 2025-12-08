@@ -59,11 +59,6 @@ function loadConfig(): DocumentSourcesConfig {
             examples: [],
           },
           {
-            pattern: "encat.org.br",
-            description: "Portal da ENCAT",
-            examples: [],
-          },
-          {
             pattern: "confaz.fazenda.gov.br",
             description: "Portal do CONFAZ",
             examples: [],
@@ -103,7 +98,8 @@ export function isAllowedDomain(url: string): boolean {
     
     // Domínios específicos
     (host: string) => host === "dfe-portal.svrs.rs.gov.br" || host.endsWith(".svrs.rs.gov.br"),
-    (host: string) => host === "encat.org.br" || host.endsWith(".encat.org.br"),
+    // ENCAT removido - site não existe mais
+    // (host: string) => host === "encat.org.br" || host.endsWith(".encat.org.br"),
     (host: string) => host === "confaz.fazenda.gov.br" || host.endsWith(".confaz.fazenda.gov.br"),
   ];
 

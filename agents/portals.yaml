@@ -1,9 +1,4 @@
 portals:
-  - id: encat-nfce
-    name: ENCAT NFC-e
-    baseUrl: "https://www.encat.org.br"
-    listingPath: "/nfce-documentos"
-    type: "nacional"
   - id: portal-nacional-nfe
     name: Portal Nacional NF-e
     baseUrl: "https://www.nfe.fazenda.gov.br"

@@ -1,11 +1,96 @@
 vectorStores:
+  # ============================================
+  # TABELAS (COMPARTILHADAS)
+  # ============================================
+  - id: tabelas-cfop
+    description: "Tabela CFOP (Código Fiscal de Operações e Prestações) compartilhada entre NF-e, NFC-e e CT-e."
+  - id: tabelas-ncm
+    description: "Tabela NCM (Nomenclatura Comum do Mercosul) compartilhada entre NF-e, NFC-e e CT-e."
+  - id: tabelas-meios-pagamento
+    description: "Tabelas de meios de pagamento utilizadas em NF-e e NFC-e."
+  - id: tabelas-aliquotas
+    description: "Tabelas de alíquotas por UF para ICMS, ISS e outros tributos."
+  - id: tabelas-codigos
+    description: "Tabelas de códigos diversos: CST, CSOSN, códigos ANP, códigos de situação tributária, etc."
+  - id: tabelas-ibc-cbs
+    description: "Tabelas relacionadas à reforma tributária (IBC, CBS, IBS) - alíquotas, códigos de transição, etc."
+
+  # ============================================
+  # TABELAS (ESPECÍFICAS)
+  # ============================================
+  - id: tabelas-nfe-especificas
+    description: "Tabelas específicas da NF-e (modelo 55) não compartilhadas com outros documentos."
+  - id: tabelas-nfce-especificas
+    description: "Tabelas específicas da NFC-e (modelo 65) não compartilhadas com outros documentos."
+
+  # ============================================
+  # NORMAS TÉCNICAS (POR DOCUMENTO)
+  # ============================================
+  - id: normas-tecnicas-nfe
+    description: "Notas Técnicas (NT) oficiais da NF-e (modelo 55), incluindo NTs do Projeto NF-e."
+  - id: normas-tecnicas-nfce
+    description: "Notas Técnicas (NT) oficiais da NFC-e (modelo 65), incluindo NTs da ENCAT e CONFAZ."
+  - id: normas-tecnicas-cte
+    description: "Notas Técnicas (NT) oficiais do CT-e (modelo 57), CT-e OS (modelo 67) e MDF-e."
+
+  # ============================================
+  # MANUAIS (POR DOCUMENTO)
+  # ============================================
+  - id: manuais-nfe
+    description: "Manuais oficiais da NF-e: Manual de Orientação do Contribuinte (MOC), manuais de integração, guias de implementação."
+  - id: manuais-nfce
+    description: "Manuais oficiais da NFC-e: manuais de orientação, guias de implementação, documentação da ENCAT."
+  - id: manuais-cte
+    description: "Manuais oficiais do CT-e/MDF-e: manuais de orientação, guias de implementação."
+
+  # ============================================
+  # INFORMES TÉCNICOS (POR DOCUMENTO)
+  # ============================================
+  - id: informes-tecnicos-nfe
+    description: "Informes técnicos, comunicados e FAQs oficiais sobre NF-e (modelo 55)."
+  - id: informes-tecnicos-nfce
+    description: "Informes técnicos, comunicados e FAQs oficiais sobre NFC-e (modelo 65)."
+  - id: informes-tecnicos-cte
+    description: "Informes técnicos, comunicados e FAQs oficiais sobre CT-e/MDF-e."
+
+  # ============================================
+  # SCHEMAS XML (POR DOCUMENTO)
+  # ============================================
+  - id: esquemas-xml-nfe
+    description: "Schemas XSD oficiais da NF-e (modelo 55), XMLs de exemplo e guias de estrutura XML."
+  - id: esquemas-xml-nfce
+    description: "Schemas XSD oficiais da NFC-e (modelo 65), XMLs de exemplo e guias de estrutura XML."
+  - id: esquemas-xml-cte
+    description: "Schemas XSD oficiais do CT-e/MDF-e, XMLs de exemplo e guias de estrutura XML."
+
+  # ============================================
+  # AJUSTES SINIEF
+  # ============================================
+  - id: ajustes-sinief-nfe
+    description: "Ajustes SINIEF específicos da NF-e (modelo 55)."
+  - id: ajustes-sinief-nfce
+    description: "Ajustes SINIEF específicos da NFC-e (modelo 65)."
+  - id: ajustes-sinief-geral
+    description: "Ajustes SINIEF gerais aplicáveis a múltiplos documentos fiscais eletrônicos."
+
+  # ============================================
+  # CONFAZ
+  # ============================================
+  - id: convenios-icms
+    description: "Convênios ICMS do CONFAZ (Conselho Nacional de Política Fazendária)."
+  - id: atos-cotepe
+    description: "Atos COTEPE (Comissão Técnica Permanente) do CONFAZ."
+
+  # ============================================
+  # LEGISLAÇÃO
+  # ============================================
   - id: legislacao-nacional-ibs-cbs-is
-    description: "Leis complementares, emendas, decretos, regulamentos que tratam de IBS, CBS e IS em âmbito nacional."
-  - id: normas-tecnicas-nfe-nfce-cte
-    description: "Notas técnicas, manuais, esquemas XML, FAQs oficiais de NF-e, NFC-e, CT-e, MDF-e."
+    description: "Leis complementares, emendas constitucionais, decretos e regulamentos que tratam de IBS, CBS e IS em âmbito nacional (EC 132/2023, LC 214/2025, etc.)."
   - id: documentos-estaduais-ibc-cbs
     description: "Normas estaduais sobre IBS/CBS/IS vinculadas aos documentos eletrônicos."
+
+  # ============================================
+  # JURISPRUDÊNCIA
+  # ============================================
   - id: jurisprudencia-tributaria
-    description: "Jurisprudência e pareceres relevantes à reforma tributária e documentos fiscais."
-  - id: legis-nfe-exemplos-xml
-    description: "XMLs de exemplo, esquemas e guias de implementação específicos de NF-e."
+    description: "Jurisprudência, pareceres, soluções de consulta e decisões administrativas/judiciais relevantes à reforma tributária e documentos fiscais."
