@@ -181,6 +181,55 @@ async function invokeClassifierAgent(
 }
 
 /**
+ * Resume o texto normalizado baseado no tipo de arquivo
+ */
+function summarizeNormalizedText(
+  content: string,
+  fileExtension: string,
+  maxLength: number = 2000
+): string | undefined {
+  const ext = fileExtension.toLowerCase().replace(/^\./, "");
+
+  // XSD: não precisa de amostra, já sabemos que é schema XML
+  if (ext === "xsd") {
+    return undefined;
+  }
+
+  // CSV: cabeçalho + 2 primeiras linhas de dados
+  if (ext === "csv") {
+    const lines = content.split("\n").filter((line) => line.trim().length > 0);
+    if (lines.length === 0) {
+      return undefined;
+    }
+    const header = lines[0];
+    const dataLines = lines.slice(1, 3); // Primeiras 2 linhas de dados
+    return [header, ...dataLines].join("\n");
+  }
+
+  // Markdown: remover front matter e truncar
+  if (ext === "md") {
+    // Remover front matter YAML (entre ---)
+    let body = content;
+    const frontMatterMatch = body.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+    if (frontMatterMatch) {
+      body = body.slice(frontMatterMatch[0].length);
+    }
+
+    // Truncar: primeiras 1000 + últimas 500 caracteres
+    if (body.length <= maxLength) {
+      return body;
+    }
+
+    const firstPart = body.slice(0, 1000);
+    const lastPart = body.slice(-500);
+    return `${firstPart}\n\n[... conteúdo omitido ...]\n\n${lastPart}`;
+  }
+
+  // Outros tipos: não incluir amostra (fallback para metadados apenas)
+  return undefined;
+}
+
+/**
  * Constrói o prompt do usuário para o classifier com todos os metadados
  */
 function buildClassifierPrompt(document: PortalDocument): string {
@@ -219,6 +268,27 @@ function buildClassifierPrompt(document: PortalDocument): string {
   
   if (document.modelo) {
     parts.push(`- Modelo: ${document.modelo}`);
+  }
+
+  // Amostra do conteúdo normalizado (quando disponível)
+  if (document.normalizedTextSample) {
+    logger.info(
+      {
+        title: document.title,
+        sampleLength: document.normalizedTextSample.length,
+        preview: document.normalizedTextSample.substring(0, 100),
+      },
+      "[LOG TEMPORÁRIO] Amostra de texto incluída no prompt do classificador"
+    );
+    parts.push(`\nAmostra do Conteúdo Normalizado:`);
+    parts.push("```");
+    parts.push(document.normalizedTextSample);
+    parts.push("```");
+  } else {
+    logger.debug(
+      { title: document.title },
+      "[LOG TEMPORÁRIO] Sem amostra de texto - usando apenas metadados"
+    );
   }
 
   parts.push(

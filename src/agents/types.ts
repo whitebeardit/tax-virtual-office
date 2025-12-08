@@ -49,6 +49,7 @@ export interface PortalDocument {
   assuntos?: string[]; // ['REFORMA_TRIBUTARIA', 'IBS', 'CBS', 'IS', etc.]
   fileName?: string; // Nome do arquivo (útil para classificação de tabelas)
   modelo?: string; // '55' (NF-e), '65' (NFC-e), '57' (CT-e), '67' (CT-e OS), etc.
+  normalizedTextSample?: string; // Amostra resumida do texto normalizado (markdown, CSV, etc.)
 }
 
 export interface PortalDefinition {

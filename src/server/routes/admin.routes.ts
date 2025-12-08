@@ -151,6 +151,16 @@ export function registerAdminRoutes(app: Express) {
         publishedAt: req.body.publishedAt,
         detectedAt: req.body.detectedAt || new Date().toISOString(),
         externalId: req.body.externalId,
+        contentHash: req.body.contentHash,
+        sourceListing: req.body.sourceListing,
+        // Campos opcionais do crawler
+        domain: req.body.domain,
+        natureza: req.body.natureza,
+        assuntos: req.body.assuntos,
+        fileName: req.body.fileName,
+        modelo: req.body.modelo,
+        // Amostra de texto normalizado
+        normalizedTextSample: req.body.normalizedTextSample,
       };
 
       if (!document.portalId || !document.title || !document.url) {
@@ -161,9 +171,23 @@ export function registerAdminRoutes(app: Express) {
       }
 
       logger.info(
-        { portalId: document.portalId, title: document.title },
-        "Classifying document"
+        {
+          portalId: document.portalId,
+          title: document.title,
+          hasTextSample: !!document.normalizedTextSample,
+          textSampleLength: document.normalizedTextSample?.length || 0,
+        },
+        "[LOG TEMPORÁRIO] Classifying document"
       );
+      
+      if (document.normalizedTextSample) {
+        logger.info(
+          {
+            preview: document.normalizedTextSample.substring(0, 150),
+          },
+          "[LOG TEMPORÁRIO] Prévia da amostra de texto recebida"
+        );
+      }
 
       const classification = await classifyDocument(document);
 
