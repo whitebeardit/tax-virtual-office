@@ -16,6 +16,7 @@ import type { AgentId } from "../agents/types.js";
 import {
   coordinatorTools,
   specialistTools,
+  classifierTools,
 } from "../agents/tools.js";
 
 // Cache de agentes para evitar recriação
@@ -63,6 +64,9 @@ export function createOpenAIAgent(agentId: AgentId): Agent {
         toolDescriptionOverride: `Delega a pergunta para o especialista ${getAgentDefinition(specialistId).name}. Use quando a pergunta requer conhecimento especializado sobre ${specialistId}.`,
       });
     });
+  } else if (agentId === "tax-document-classifier") {
+    // Classifier tem vector-stores-metadata e logger
+    tools = classifierTools;
   } else {
     // Especialistas têm apenas file-search e logger
     tools = specialistTools;

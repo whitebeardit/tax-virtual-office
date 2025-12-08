@@ -43,6 +43,12 @@ export interface PortalDocument {
   contentHash?: string;
   externalId?: string;
   sourceListing?: string;
+  // Campos opcionais do crawler (metadados enriquecidos)
+  domain?: string; // 'nfe', 'nfce', 'cte', 'confaz'
+  natureza?: string; // 'NOTA_TECNICA', 'MANUAL', 'TABELA', 'INFORME_TECNICO', 'SCHEMA_XML', 'AJUSTE_SINIEF', 'CONVENIO', 'LEI', 'DECRETO', etc.
+  assuntos?: string[]; // ['REFORMA_TRIBUTARIA', 'IBS', 'CBS', 'IS', etc.]
+  fileName?: string; // Nome do arquivo (útil para classificação de tabelas)
+  modelo?: string; // '55' (NF-e), '65' (NFC-e), '57' (CT-e), '67' (CT-e OS), etc.
 }
 
 export interface PortalDefinition {
@@ -63,4 +69,6 @@ export interface ClassifiedDocument {
   tags: string[];
   rationale?: string;
   score?: number;
+  confidenceScore?: number; // 0.0 a 1.0 - grau de confiança da classificação
+  alternativeStores?: string[]; // Vector stores alternativos caso o principal não seja adequado
 }

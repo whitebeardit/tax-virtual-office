@@ -1,16 +1,17 @@
 {
   "name": "tax-virtual-office",
   "version": "0.1.0",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "license": "MIT",
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "dev": "npm run build && node dist/index.js",
-    "start": "node dist/index.js",
+    "dev": "npm run build && node dist/src/index.js",
+    "start": "node dist/src/index.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:classifier": "npm run build && node dist/scripts/test-classifier.js",
     "lint": "echo 'no lint configured'"
   },
   "dependencies": {

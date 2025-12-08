@@ -10,6 +10,7 @@ import { z } from "zod";
 import { fileSearch, type FileSearchQuery } from "../mcp/fileSearchTool.js";
 import { logger } from "../utils/logger.js";
 import { validateUrl } from "../config/allowed-domains.js";
+import { getVectorStoresMetadata } from "../mcp/vectorStoresMetadataTool.js";
 
 /**
  * Tool: file-search
@@ -19,17 +20,61 @@ export const fileSearchTool = tool({
   name: "file_search",
   description: `Busca em vector stores e arquivos locais para encontrar informações relevantes.
   
-Vector stores disponíveis:
+Vector stores disponíveis organizados por categoria:
+
+TABELAS (Compartilhadas):
+- tabelas-cfop: CFOP compartilhado entre NF-e, NFC-e, CT-e
+- tabelas-ncm: NCM compartilhado
+- tabelas-meios-pagamento: Meios de pagamento (NF-e, NFC-e)
+- tabelas-aliquotas: Alíquotas por UF
+- tabelas-codigos: CST, CSOSN, códigos ANP, etc.
+- tabelas-ibc-cbs: Tabelas de reforma tributária
+
+TABELAS (Específicas):
+- tabelas-nfe-especificas: Tabelas específicas NF-e
+- tabelas-nfce-especificas: Tabelas específicas NFC-e
+
+NORMAS TÉCNICAS (por documento):
+- normas-tecnicas-nfe: NTs NF-e
+- normas-tecnicas-nfce: NTs NFC-e
+- normas-tecnicas-cte: NTs CT-e/MDF-e
+
+MANUAIS (por documento):
+- manuais-nfe: Manuais NF-e (MOC, etc.)
+- manuais-nfce: Manuais NFC-e
+- manuais-cte: Manuais CT-e/MDF-e
+
+INFORMES TÉCNICOS (por documento):
+- informes-tecnicos-nfe: Informes NF-e
+- informes-tecnicos-nfce: Informes NFC-e
+- informes-tecnicos-cte: Informes CT-e/MDF-e
+
+SCHEMAS XML (por documento):
+- esquemas-xml-nfe: Schemas XSD NF-e
+- esquemas-xml-nfce: Schemas XSD NFC-e
+- esquemas-xml-cte: Schemas XSD CT-e/MDF-e
+
+AJUSTES SINIEF:
+- ajustes-sinief-nfe: Ajustes específicos NF-e
+- ajustes-sinief-nfce: Ajustes específicos NFC-e
+- ajustes-sinief-geral: Ajustes gerais
+
+CONFAZ:
+- convenios-icms: Convênios ICMS
+- atos-cotepe: Atos COTEPE
+
+LEGISLAÇÃO:
 - legislacao-nacional-ibs-cbs-is: IBS/CBS/IS, EC 132/2023, LC 214/2025
-- normas-tecnicas-nfe-nfce-cte: NTs, manuais, schemas XML
 - documentos-estaduais-ibc-cbs: Normas estaduais
+
+JURISPRUDÊNCIA:
 - jurisprudencia-tributaria: Pareceres e decisões
-- legis-nfe-exemplos-xml: Exemplos de XML e guias
 
 Use esta ferramenta PRIMEIRO antes de responder perguntas, especialmente para:
 - Normas técnicas e legislação
 - Documentos fiscais eletrônicos (NF-e, NFC-e, CT-e)
-- Reforma tributária (IBS/CBS/IS)`,
+- Reforma tributária (IBS/CBS/IS)
+- Tabelas e códigos fiscais`,
   parameters: z.object({
     vectorStoreId: z
       .string()
@@ -174,8 +219,43 @@ Use para:
 });
 
 /**
+ * Tool: vector-stores-metadata
+ * Retorna a lista de vector stores disponíveis
+ */
+export const vectorStoresMetadataTool = tool({
+  name: "vector-stores-metadata",
+  description: `Retorna a lista completa de vector stores disponíveis configurados em agents/vectorstores.yaml.
+  
+Use esta ferramenta para consultar quais vector stores estão disponíveis antes de classificar um documento.
+Retorna uma lista com id e description de cada vector store.`,
+  parameters: z.object({}),
+  async execute() {
+    logger.info({}, "[vector-stores-metadata] Consultando vector stores disponíveis");
+
+    try {
+      const stores = getVectorStoresMetadata();
+      
+      if (stores.length === 0) {
+        return "Nenhum vector store configurado em agents/vectorstores.yaml.";
+      }
+
+      const formatted = stores
+        .map((store) => `- ${store.id}: ${store.description}`)
+        .join("\n");
+
+      return `Vector stores disponíveis (${stores.length}):\n\n${formatted}`;
+    } catch (error) {
+      logger.error({ error }, "[vector-stores-metadata] Erro");
+      return `Erro ao consultar vector stores: ${error instanceof Error ? error.message : String(error)}`;
+    }
+  },
+});
+
+/**
  * Lista de todas as tools disponíveis
  */
 export const coordinatorTools = [fileSearchTool, webTool, loggerTool];
 
 export const specialistTools = [fileSearchTool, loggerTool];
+
+export const classifierTools = [vectorStoresMetadataTool, loggerTool];

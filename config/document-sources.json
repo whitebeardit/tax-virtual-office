@@ -43,13 +43,6 @@
         ]
       },
       {
-        "pattern": "encat.org.br",
-        "description": "Portal da ENCAT (Entidade Nacional de Coordenação e Acompanhamento da NFC-e)",
-        "examples": [
-          "www.encat.org.br"
-        ]
-      },
-      {
         "pattern": "confaz.fazenda.gov.br",
         "description": "Portal do CONFAZ (Conselho Nacional de Política Fazendária)",
         "examples": [

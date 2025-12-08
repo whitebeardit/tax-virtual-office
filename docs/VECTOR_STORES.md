@@ -6,14 +6,212 @@ Este documento descreve os vector stores utilizados pelo Tax Virtual Office para
 
 Vector stores são repositórios de conhecimento especializados que utilizam embeddings para busca semântica. Cada vector store é otimizado para um tipo específico de conteúdo e é consultado via `file-search` pelos agentes.
 
+A estrutura atual organiza os vector stores por:
+- **Tabelas** (compartilhadas e específicas)
+- **Normas Técnicas** (por documento)
+- **Manuais** (por documento)
+- **Informes Técnicos** (por documento)
+- **Schemas XML** (por documento)
+- **Ajustes SINIEF** (por documento)
+- **CONFAZ** (convênios e atos)
+- **Legislação** (nacional e estadual)
+- **Jurisprudência**
+
 ## Configuração
 
 Os vector stores são definidos em `agents/vectorstores.yaml` e consultados pelo `tax-document-classifier` para decidir onde armazenar novos documentos.
 
-## Vector Stores Disponíveis
+## Vector Stores por Categoria
 
-### 1. `legislacao-nacional-ibs-cbs-is`
+### TABELAS (Compartilhadas)
 
+#### `tabelas-cfop`
+**Descrição**: Tabela CFOP (Código Fiscal de Operações e Prestações) compartilhada entre NF-e, NFC-e e CT-e.
+
+**Conteúdo Esperado**:
+- Tabela CFOP oficial
+- Atualizações e revisões
+- Orientações de uso
+
+**Agentes que Consultam**: Todos os especialistas (nfe, nfce, cte)
+
+#### `tabelas-ncm`
+**Descrição**: Tabela NCM (Nomenclatura Comum do Mercosul) compartilhada entre NF-e, NFC-e e CT-e.
+
+**Conteúdo Esperado**:
+- Tabela NCM oficial
+- Atualizações e revisões
+- Orientações de uso
+
+**Agentes que Consultam**: Todos os especialistas (nfe, nfce, cte)
+
+#### `tabelas-meios-pagamento`
+**Descrição**: Tabelas de meios de pagamento utilizadas em NF-e e NFC-e.
+
+**Conteúdo Esperado**:
+- Códigos de meios de pagamento
+- Formas de pagamento aceitas
+- Regras de uso
+
+**Agentes que Consultam**: `specialist-nfe`, `specialist-nfce`
+
+#### `tabelas-aliquotas`
+**Descrição**: Tabelas de alíquotas por UF para ICMS, ISS e outros tributos.
+
+**Conteúdo Esperado**:
+- Alíquotas por estado
+- Regras de aplicação
+- Atualizações periódicas
+
+**Agentes que Consultam**: Todos os especialistas
+
+#### `tabelas-codigos`
+**Descrição**: Tabelas de códigos diversos: CST, CSOSN, códigos ANP, códigos de situação tributária, etc.
+
+**Conteúdo Esperado**:
+- Códigos de situação tributária (CST, CSOSN)
+- Códigos ANP (combustíveis)
+- Outros códigos fiscais
+
+**Agentes que Consultam**: Todos os especialistas
+
+#### `tabelas-ibc-cbs`
+**Descrição**: Tabelas relacionadas à reforma tributária (IBC, CBS, IBS) - alíquotas, códigos de transição, etc.
+
+**Conteúdo Esperado**:
+- Tabelas de alíquotas IBS/CBS
+- Códigos de transição
+- Regras de aplicação
+
+**Agentes que Consultam**: `legislacao-ibs-cbs`, especialistas quando envolver reforma
+
+### TABELAS (Específicas)
+
+#### `tabelas-nfe-especificas`
+**Descrição**: Tabelas específicas da NF-e (modelo 55) não compartilhadas com outros documentos.
+
+**Agentes que Consultam**: `specialist-nfe`
+
+#### `tabelas-nfce-especificas`
+**Descrição**: Tabelas específicas da NFC-e (modelo 65) não compartilhadas com outros documentos.
+
+**Agentes que Consultam**: `specialist-nfce`
+
+### NORMAS TÉCNICAS (Por Documento)
+
+#### `normas-tecnicas-nfe`
+**Descrição**: Notas Técnicas (NT) oficiais da NF-e (modelo 55), incluindo NTs do Projeto NF-e.
+
+**Conteúdo Esperado**:
+- Notas Técnicas oficiais
+- Atualizações de layout
+- Regras de validação
+
+**Agentes que Consultam**: `specialist-nfe` (primário), `coordinator` (secundário)
+
+#### `normas-tecnicas-nfce`
+**Descrição**: Notas Técnicas (NT) oficiais da NFC-e (modelo 65), incluindo NTs da ENCAT e CONFAZ.
+
+**Conteúdo Esperado**:
+- Notas Técnicas oficiais
+- Orientações sobre CSC, QR Code
+- Regras de contingência
+
+**Agentes que Consultam**: `specialist-nfce` (primário), `coordinator` (secundário)
+
+#### `normas-tecnicas-cte`
+**Descrição**: Notas Técnicas (NT) oficiais do CT-e (modelo 57), CT-e OS (modelo 67) e MDF-e.
+
+**Conteúdo Esperado**:
+- Notas Técnicas oficiais
+- Regras por modal de transporte
+- Eventos e validações
+
+**Agentes que Consultam**: `specialist-cte` (primário), `coordinator` (secundário)
+
+### MANUAIS (Por Documento)
+
+#### `manuais-nfe`
+**Descrição**: Manuais oficiais da NF-e: Manual de Orientação do Contribuinte (MOC), manuais de integração, guias de implementação.
+
+**Agentes que Consultam**: `specialist-nfe` (primário)
+
+#### `manuais-nfce`
+**Descrição**: Manuais oficiais da NFC-e: manuais de orientação, guias de implementação, documentação da ENCAT.
+
+**Agentes que Consultam**: `specialist-nfce` (primário)
+
+#### `manuais-cte`
+**Descrição**: Manuais oficiais do CT-e/MDF-e: manuais de orientação, guias de implementação.
+
+**Agentes que Consultam**: `specialist-cte` (primário)
+
+### INFORMES TÉCNICOS (Por Documento)
+
+#### `informes-tecnicos-nfe`
+**Descrição**: Informes técnicos, comunicados e FAQs oficiais sobre NF-e (modelo 55).
+
+**Agentes que Consultam**: `specialist-nfe` (primário)
+
+#### `informes-tecnicos-nfce`
+**Descrição**: Informes técnicos, comunicados e FAQs oficiais sobre NFC-e (modelo 65).
+
+**Agentes que Consultam**: `specialist-nfce` (primário)
+
+#### `informes-tecnicos-cte`
+**Descrição**: Informes técnicos, comunicados e FAQs oficiais sobre CT-e/MDF-e.
+
+**Agentes que Consultam**: `specialist-cte` (primário)
+
+### SCHEMAS XML (Por Documento)
+
+#### `esquemas-xml-nfe`
+**Descrição**: Schemas XSD oficiais da NF-e (modelo 55), XMLs de exemplo e guias de estrutura XML.
+
+**Agentes que Consultam**: `specialist-nfe` (primário)
+
+#### `esquemas-xml-nfce`
+**Descrição**: Schemas XSD oficiais da NFC-e (modelo 65), XMLs de exemplo e guias de estrutura XML.
+
+**Agentes que Consultam**: `specialist-nfce` (primário)
+
+#### `esquemas-xml-cte`
+**Descrição**: Schemas XSD oficiais do CT-e/MDF-e, XMLs de exemplo e guias de estrutura XML.
+
+**Agentes que Consultam**: `specialist-cte` (primário)
+
+### AJUSTES SINIEF
+
+#### `ajustes-sinief-nfe`
+**Descrição**: Ajustes SINIEF específicos da NF-e (modelo 55).
+
+**Agentes que Consultam**: `specialist-nfe` (secundário)
+
+#### `ajustes-sinief-nfce`
+**Descrição**: Ajustes SINIEF específicos da NFC-e (modelo 65).
+
+**Agentes que Consultam**: `specialist-nfce` (secundário)
+
+#### `ajustes-sinief-geral`
+**Descrição**: Ajustes SINIEF gerais aplicáveis a múltiplos documentos fiscais eletrônicos.
+
+**Agentes que Consultam**: Todos os especialistas (secundário)
+
+### CONFAZ
+
+#### `convenios-icms`
+**Descrição**: Convênios ICMS do CONFAZ (Conselho Nacional de Política Fazendária).
+
+**Agentes que Consultam**: `coordinator`, `legislacao-ibs-cbs`, especialistas quando envolver ICMS
+
+#### `atos-cotepe`
+**Descrição**: Atos COTEPE (Comissão Técnica Permanente) do CONFAZ.
+
+**Agentes que Consultam**: `coordinator`, `legislacao-ibs-cbs`
+
+### LEGISLAÇÃO
+
+#### `legislacao-nacional-ibs-cbs-is`
 **Descrição**: Leis complementares, emendas constitucionais, decretos e regulamentos sobre IBS (Imposto sobre Bens e Serviços), CBS (Contribuição sobre Bens e Serviços) e IS (Imposto Seletivo) em âmbito nacional.
 
 **Conteúdo Esperado**:
@@ -23,184 +221,55 @@ Os vector stores são definidos em `agents/vectorstores.yaml` e consultados pelo
 - Portarias e instruções normativas
 - Cronograma de transição 2026-2033
 
-**Uso**:
-- Consultas sobre reforma tributária
-- Questões sobre IBS, CBS e IS
-- Impactos da transição tributária
-- Regulamentações federais
+**Agentes que Consultam**: `coordinator` (prioritário), `legislacao-ibs-cbs` (especialista), especialistas quando envolver reforma
 
-**Agentes que Consultam**:
-- `coordinator` (prioritário)
-- `legislacao-ibs-cbs` (especialista)
-- `specialist-nfe`, `specialist-nfce`, `specialist-cte` (quando envolver reforma)
-
-**Exemplos de Queries**:
-- "Como funciona o cálculo de IBS?"
-- "Qual o cronograma de transição para CBS?"
-- "Impactos da EC 132/2023 sobre documentos fiscais"
-
-### 2. `normas-tecnicas-nfe-nfce-cte`
-
-**Descrição**: Notas técnicas, manuais de orientação, esquemas XML, FAQs oficiais e documentação técnica sobre NF-e (modelo 55), NFC-e (modelo 65), CT-e (Conhecimento de Transporte Eletrônico) e MDF-e (Manifesto de Documentos Fiscais Eletrônicos).
-
-**Conteúdo Esperado**:
-- Notas Técnicas (NT) oficiais
-- Manual de Orientação do Contribuinte (MOC)
-- Manual de Integração
-- Schemas XSD oficiais
-- FAQs e comunicados técnicos
-- Guias de implementação
-
-**Uso**:
-- Questões técnicas sobre documentos fiscais eletrônicos
-- Estrutura XML e validações
-- Web services SEFAZ
-- Regras de preenchimento
-- Códigos de rejeição e tratamento de erros
-
-**Agentes que Consultam**:
-- `coordinator` (prioritário)
-- `specialist-nfe` (primário)
-- `specialist-nfce` (primário)
-- `specialist-cte` (primário)
-
-**Exemplos de Queries**:
-- "Qual o tamanho máximo do campo cProd na NF-e?"
-- "Como funciona o cancelamento de NFC-e?"
-- "Quais os códigos de rejeição do CT-e?"
-
-### 3. `documentos-estaduais-ibc-cbs`
-
+#### `documentos-estaduais-ibc-cbs`
 **Descrição**: Normas estaduais sobre IBS/CBS/IS vinculadas aos documentos eletrônicos, incluindo regulamentações específicas de cada estado.
 
-**Conteúdo Esperado**:
-- Decretos estaduais sobre IBS/CBS
-- Instruções normativas estaduais
-- Convênios ICMS relacionados à reforma
-- Regulamentações específicas por UF
-- Orientações de SEFAZs estaduais
+**Agentes que Consultam**: `coordinator` (secundário), `legislacao-ibs-cbs` (secundário), especialistas quando envolver regras estaduais
 
-**Uso**:
-- Regras específicas de estados
-- Variações estaduais na implementação
-- Convênios e acordos interestaduais
-- Orientações de SEFAZs específicas
+### JURISPRUDÊNCIA
 
-**Agentes que Consultam**:
-- `coordinator` (secundário)
-- `legislacao-ibs-cbs` (secundário)
-- `specialist-nfe`, `specialist-nfce`, `specialist-cte` (quando envolver regras estaduais)
-
-**Exemplos de Queries**:
-- "Como SP está implementando a transição para IBS?"
-- "Regras de NFC-e específicas de MG"
-- "Convênios ICMS sobre reforma tributária"
-
-### 4. `jurisprudencia-tributaria`
-
+#### `jurisprudencia-tributaria`
 **Descrição**: Jurisprudência, pareceres, soluções de consulta, acórdãos e decisões relevantes à reforma tributária e documentos fiscais eletrônicos.
 
-**Conteúdo Esperado**:
-- Pareceres de órgãos competentes
-- Soluções de Consulta (SOLIC)
-- Acórdãos de tribunais
-- Decisões administrativas
-- Interpretações oficiais
-
-**Uso**:
-- Interpretações de legislação
-- Casos práticos e precedentes
-- Orientações sobre aplicação de normas
-- Resolução de dúvidas específicas
-
-**Agentes que Consultam**:
-- `coordinator` (secundário)
-- `legislacao-ibs-cbs` (secundário)
-- Especialistas (quando necessário para interpretação)
-
-**Exemplos de Queries**:
-- "Como foi interpretado o art. X da LC 214/2025?"
-- "Parecer sobre aplicação de IBS em caso específico"
-- "Precedentes sobre cancelamento de NF-e"
-
-### 5. `legis-nfe-exemplos-xml`
-
-**Descrição**: XMLs de exemplo, esquemas XSD, guias de implementação e referências técnicas específicas de NF-e.
-
-**Conteúdo Esperado**:
-- XMLs de exemplo oficiais
-- Schemas XSD (nfe_v4.00.xsd e correlatos)
-- Guias de implementação
-- Exemplos de preenchimento
-- Casos de uso práticos
-
-**Uso**:
-- Referências técnicas e exemplos práticos
-- Validação de estrutura XML
-- Guias de implementação
-- Casos de uso específicos
-
-**Agentes que Consultam**:
-- `specialist-nfe` (primário)
-- `specialist-nfce` (secundário)
-- `coordinator` (quando necessário para exemplos)
-
-**Exemplos de Queries**:
-- "Exemplo de XML de NF-e com múltiplos produtos"
-- "Como preencher tag X na NF-e?"
-- "Estrutura XML para cancelamento"
+**Agentes que Consultam**: `coordinator` (secundário), `legislacao-ibs-cbs` (secundário), especialistas quando necessário
 
 ## Classificação de Documentos
 
-O `tax-document-classifier` usa heurísticas para decidir qual vector store receberá cada documento detectado:
+O `tax-document-classifier` usa um agente LLM para classificar documentos, priorizando metadados do crawler quando disponíveis.
 
-### Heurísticas de Classificação
+### Metadados do Crawler
 
-| Padrão no Título/URL | Vector Store Priorizado | Score |
-|----------------------|------------------------|-------|
-| "NT", "Nota Técnica", "Manual" | `normas-tecnicas-nfe-nfce-cte` | +4 |
-| "schema", "XML", "XSD" | `legis-nfe-exemplos-xml` | +4 |
-| "Lei Complementar", "LC", "Decreto" (nacional) | `legislacao-nacional-ibs-cbs-is` | +3 |
-| Portal estadual | `documentos-estaduais-ibc-cbs` | +3 |
-| "Ajuste", "SINIEF", "CONFAZ" | `legislacao-nacional-ibs-cbs-is` | +3 |
-| "Parecer", "Solução de Consulta", "Acórdão" | `jurisprudencia-tributaria` | +3 |
-| "NF-e", "NFE" no título | `normas-tecnicas-nfe-nfce-cte` | +2 |
-| "NFC-e", "NFCE" no título | `normas-tecnicas-nfe-nfce-cte` | +2 |
+Quando disponíveis, os seguintes metadados são usados para classificação precisa:
 
-### Processo de Classificação
+- `domain` ('nfe', 'nfce', 'cte', 'confaz'): Indica o documento fiscal principal
+- `natureza` ('NOTA_TECNICA', 'MANUAL', 'TABELA', 'INFORME_TECNICO', 'SCHEMA_XML', 'AJUSTE_SINIEF', 'CONVENIO', 'LEI', 'DECRETO'): Tipo de documento
+- `assuntos` (array): Temas abordados (ex: ['REFORMA_TRIBUTARIA', 'IBS', 'CBS'])
+- `fileName`: Nome do arquivo pode indicar tipo de tabela (ex: "CFOP", "NCM")
+- `modelo` ('55', '65', '57', '67'): Modelo do documento fiscal
 
-1. **Análise de Metadados**: Título, portal, URL, tipo
-2. **Consulta ao Catálogo**: Lê `agents/vectorstores.yaml`
-3. **Cálculo de Scores**: Aplica heurísticas para cada vector store
-4. **Seleção**: Escolhe o vector store com maior score
-5. **Geração de Tags**: Cria tags baseadas em portal, tipo, ano
-6. **Confidence Score**: Calcula confiança (0.0 a 1.0)
+### Mapeamento de Natureza para Vector Stores
 
-### Exemplo de Classificação
+O classifier mapeia a natureza do documento para o vector store apropriado:
 
-**Input**:
-```json
-{
-  "portalId": "encat-nfce",
-  "title": "Nota Técnica 2025.001 - Atualização do Layout NFC-e",
-  "url": "https://www.encat.org.br/nfce-documentos/nt-2025-001"
-}
-```
+- **NOTA_TECNICA** → `normas-tecnicas-{domain}` (nfe/nfce/cte)
+- **MANUAL** → `manuais-{domain}` (nfe/nfce/cte)
+- **TABELA** → `tabelas-{tipo}` (cfop, ncm, meios-pagamento, etc.)
+- **INFORME_TECNICO** → `informes-tecnicos-{domain}` (nfe/nfce/cte)
+- **SCHEMA_XML** → `esquemas-xml-{domain}` (nfe/nfce/cte)
+- **AJUSTE_SINIEF** → `ajustes-sinief-{domain}` ou `ajustes-sinief-geral`
+- **CONVENIO** → `convenios-icms` ou `atos-cotepe`
+- **LEI/DECRETO** → `legislacao-nacional-ibs-cbs-is` ou `documentos-estaduais-ibc-cbs`
+- **JURISPRUDENCIA** → `jurisprudencia-tributaria`
 
-**Scores Calculados**:
-- `normas-tecnicas-nfe-nfce-cte`: +4 (NT) + +2 (NFC-e) = **6**
-- `legislacao-nacional-ibs-cbs-is`: 0
-- Outros: 0
+### Heurísticas de Fallback
 
-**Output**:
-```json
-{
-  "targetVectorStoreId": "normas-tecnicas-nfe-nfce-cte",
-  "tags": ["portal:encat-nfce", "tipo:nota-tecnica", "ano:2025"],
-  "confidenceScore": 0.85,
-  "rationale": "Título menciona 'Nota Técnica' e 'NFC-e'; portal especializado."
-}
-```
+Quando metadados do crawler não estão disponíveis, o classifier usa heurísticas baseadas em:
+- Título do documento
+- URL
+- Portal de origem
+- Padrões de texto
 
 ## Consulta via file-search
 
@@ -208,31 +277,16 @@ Os agentes consultam vector stores via ferramenta `file-search`:
 
 ### Uso pelo Coordinator
 
-```typescript
-// O coordinator consulta vector stores prioritários
-const vectorStores = [
-  "legislacao-nacional-ibs-cbs-is",
-  "normas-tecnicas-nfe-nfce-cte",
-  "documentos-estaduais-ibc-cbs",
-  "jurisprudencia-tributaria",
-  "legis-nfe-exemplos-xml"
-];
-
-// Query exemplo
-fileSearch({
-  query: "prazo cancelamento NF-e",
-  vectorStores: ["normas-tecnicas-nfe-nfce-cte"]
-});
-```
+O coordinator consulta vector stores prioritários organizados por categoria conforme a pergunta do usuário.
 
 ### Uso pelos Especialistas
 
 Cada especialista consulta seus vector stores primários:
 
-- **specialist-nfe**: `normas-tecnicas-nfe-nfce-cte`, `legis-nfe-exemplos-xml`
-- **specialist-nfce**: `normas-tecnicas-nfe-nfce-cte`
-- **specialist-cte**: `normas-tecnicas-nfe-nfce-cte`
-- **legislacao-ibs-cbs**: `legislacao-nacional-ibs-cbs-is`, `documentos-estaduais-ibc-cbs`
+- **specialist-nfe**: `normas-tecnicas-nfe`, `manuais-nfe`, `informes-tecnicos-nfe`, `esquemas-xml-nfe`, `tabelas-*`
+- **specialist-nfce**: `normas-tecnicas-nfce`, `manuais-nfce`, `informes-tecnicos-nfce`, `esquemas-xml-nfce`, `tabelas-*`
+- **specialist-cte**: `normas-tecnicas-cte`, `manuais-cte`, `informes-tecnicos-cte`, `esquemas-xml-cte`, `tabelas-cfop`, `tabelas-ncm`
+- **legislacao-ibs-cbs**: `legislacao-nacional-ibs-cbs-is`, `tabelas-ibc-cbs`, `documentos-estaduais-ibc-cbs`, `jurisprudencia-tributaria`
 
 ## Adicionar Novo Vector Store
 
@@ -245,38 +299,26 @@ vectorStores:
     description: "Descrição do propósito e conteúdo esperado"
 ```
 
-2. **Atualize heurísticas** (se necessário):
-   - Edite `src/agents/maintenance.ts:286-341`
-   - Adicione padrões de classificação
+2. **Atualize o prompt do classifier** (`agents/prompts/tax-document-classifier.system.md`):
+   - Adicione regras de mapeamento de natureza
+   - Adicione heurísticas de fallback
 
 3. **Atualize documentação**:
    - Adicione entrada neste arquivo
    - Documente conteúdo esperado e uso
 
-4. **Teste classificação**:
+4. **Atualize prompts dos especialistas** (se aplicável):
+   - Adicione referência ao novo store nos prompts relevantes
+
+5. **Teste classificação**:
    - Execute varredura de portais
    - Verifique se documentos são classificados corretamente
-
-## Manutenção
-
-### Verificar Conteúdo
-
-Para verificar quais documentos estão em cada vector store:
-- Consulte o sistema de File Search
-- Verifique logs de classificação
-- Analise tags dos documentos processados
-
-### Limpeza
-
-Vector stores podem acumular documentos desatualizados:
-- Implementar política de retenção
-- Marcar documentos como obsoletos
-- Remover documentos duplicados
 
 ## Referências
 
 - **Configuração**: `agents/vectorstores.yaml`
 - **Classificação**: `src/agents/maintenance.ts` (função `classifyDocument`)
-- **Heurísticas**: `src/agents/maintenance.ts:286-341` (função `scoreVectorStores`)
+- **Tool de Metadados**: `src/mcp/vectorStoresMetadataTool.ts`
+- **Prompt do Classifier**: `agents/prompts/tax-document-classifier.system.md`
 - **Documentação de Agentes**: `docs/AGENTS.md`
 - **Documentação de Workflows**: `docs/WORKFLOWS.md`
