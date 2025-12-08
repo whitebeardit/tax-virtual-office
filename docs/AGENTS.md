@@ -30,11 +30,16 @@ O Tax Virtual Office utiliza uma arquitetura baseada em **agentes especializados
 - Citar fontes formais (lei, decreto, NT, manual, schema)
 
 **Vector Stores Prioritários**:
-- `legislacao-nacional-ibs-cbs-is` (IBS/CBS/IS, EC 132/2023, LC 214/2025)
-- `normas-tecnicas-nfe-nfce-cte` (NTs, manuais, schemas XML, FAQs)
-- `documentos-estaduais-ibc-cbs` (normas estaduais)
-- `jurisprudencia-tributaria` (pareceres, decisões, consultas)
-- `legis-nfe-exemplos-xml` (exemplos de XML, XSD, guias)
+O coordinator consulta vector stores organizados por categoria conforme a natureza da pergunta. A estrutura completa com 30+ vector stores está documentada em [docs/VECTOR_STORES.md](VECTOR_STORES.md).
+
+**Exemplos de Vector Stores por Categoria**:
+- **Legislação**: `legislacao-nacional-ibs-cbs-is`, `documentos-estaduais-ibc-cbs`
+- **Normas Técnicas** (por documento): `normas-tecnicas-nfe`, `normas-tecnicas-nfce`, `normas-tecnicas-cte`
+- **Manuais** (por documento): `manuais-nfe`, `manuais-nfce`, `manuais-cte`
+- **Tabelas**: `tabelas-cfop`, `tabelas-ncm`, `tabelas-aliquotas`, `tabelas-codigos`
+- **Jurisprudência**: `jurisprudencia-tributaria`
+
+O coordinator seleciona os vector stores mais relevantes baseado na análise da pergunta do usuário.
 
 ### 2. Especialistas em Documentos Fiscais
 
@@ -56,12 +61,18 @@ O Tax Virtual Office utiliza uma arquitetura baseada em **agentes especializados
 - Notas técnicas e manuais oficiais
 
 **Vector Stores Primários**:
-- `normas-tecnicas-nfe-nfce-cte`
-- `legis-nfe-exemplos-xml`
+- `normas-tecnicas-nfe` (Notas Técnicas específicas de NF-e)
+- `manuais-nfe` (Manuais oficiais, MOC, guias de implementação)
+- `informes-tecnicos-nfe` (Informes, comunicados, FAQs)
+- `esquemas-xml-nfe` (Schemas XSD, XMLs de exemplo)
+- `tabelas-*` (Tabelas compartilhadas: CFOP, NCM, alíquotas, códigos)
 
 **Vector Stores Secundários**:
 - `legislacao-nacional-ibs-cbs-is` (quando envolver reforma tributária)
 - `documentos-estaduais-ibc-cbs` (regras específicas de UF)
+- `ajustes-sinief-nfe` (Ajustes SINIEF específicos de NF-e)
+
+**Nota**: Para lista completa de vector stores, consulte [docs/VECTOR_STORES.md](VECTOR_STORES.md)
 
 #### 2.2. Especialista NFC-e (`specialist-nfce`)
 
@@ -74,6 +85,18 @@ O Tax Virtual Office utiliza uma arquitetura baseada em **agentes especializados
 
 **Escopo**: Similar ao NF-e, mas focado em NFC-e (Nota Fiscal de Consumidor Eletrônica).
 
+**Vector Stores Primários**:
+- `normas-tecnicas-nfce` (Notas Técnicas específicas de NFC-e)
+- `manuais-nfce` (Manuais oficiais, guias de implementação)
+- `informes-tecnicos-nfce` (Informes, comunicados, FAQs)
+- `esquemas-xml-nfce` (Schemas XSD, XMLs de exemplo)
+- `tabelas-*` (Tabelas compartilhadas: CFOP, NCM, meios de pagamento, alíquotas)
+
+**Vector Stores Secundários**:
+- `legislacao-nacional-ibs-cbs-is` (quando envolver reforma tributária)
+- `documentos-estaduais-ibc-cbs` (regras específicas de UF)
+- `ajustes-sinief-nfce` (Ajustes SINIEF específicos de NFC-e)
+
 #### 2.3. Especialista CT-e (`specialist-cte`)
 
 **Responsabilidade**: Responder questões técnicas sobre CT-e, CT-e OS e MDF-e.
@@ -84,6 +107,18 @@ O Tax Virtual Office utiliza uma arquitetura baseada em **agentes especializados
 - **Prompt**: `agents/prompts/specialist-cte.system.md`
 
 **Escopo**: Conhecimento Técnico de Transporte Eletrônico e Manifesto de Documentos Fiscais.
+
+**Vector Stores Primários**:
+- `normas-tecnicas-cte` (Notas Técnicas específicas de CT-e/MDF-e)
+- `manuais-cte` (Manuais oficiais, guias de implementação)
+- `informes-tecnicos-cte` (Informes, comunicados, FAQs)
+- `esquemas-xml-cte` (Schemas XSD, XMLs de exemplo)
+- `tabelas-cfop`, `tabelas-ncm` (Tabelas compartilhadas relevantes)
+
+**Vector Stores Secundários**:
+- `legislacao-nacional-ibs-cbs-is` (quando envolver reforma tributária)
+- `documentos-estaduais-ibc-cbs` (regras específicas de UF)
+- `ajustes-sinief-geral` (Ajustes SINIEF gerais)
 
 ### 3. Especialista em Legislação (`legislacao-ibs-cbs`)
 
@@ -102,8 +137,14 @@ O Tax Virtual Office utiliza uma arquitetura baseada em **agentes especializados
 - Impactos sobre documentos fiscais eletrônicos
 
 **Vector Stores Primários**:
-- `legislacao-nacional-ibs-cbs-is`
-- `documentos-estaduais-ibc-cbs`
+- `legislacao-nacional-ibs-cbs-is` (EC 132/2023, LC 214/2025, decretos, regulamentos)
+- `tabelas-ibc-cbs` (Tabelas de alíquotas, códigos de transição)
+- `documentos-estaduais-ibc-cbs` (Normas estaduais sobre IBS/CBS/IS)
+- `jurisprudencia-tributaria` (Pareceres e decisões sobre reforma tributária)
+
+**Vector Stores Secundários**:
+- `convenios-icms`, `atos-cotepe` (CONFAZ - quando relevante)
+- Vector stores de documentos fiscais quando envolver impacto na reforma
 
 ### 4. Agentes de Manutenção
 
@@ -113,18 +154,21 @@ O Tax Virtual Office utiliza uma arquitetura baseada em **agentes especializados
 
 **Características**:
 - **Modelo**: `gpt-5.1`
-- **Ferramentas**: `http-fetch`, `kv-state`, `logger`, `task-queue`
+- **Ferramentas MCP**: `logger` (via Agents SDK, se usado)
+- **Funcionalidades Internas**: Usa `httpFetch()` diretamente e gerencia estado via arquivo JSON
 - **Prompt**: `agents/prompts/tax-portal-watcher.system.md`
 
 **Fluxo de Trabalho**:
 1. Lê configuração de portais em `agents/portals.yaml`
-2. Faz fetch das páginas de listagem via `http-fetch`
-3. Extrai links e metadados (título, data, URL)
-4. Carrega estado anterior via `kv-state` (hashes/URLs já vistos)
-5. Filtra apenas documentos novos (deduplicação)
-6. Gera `contentHash` para cada documento novo
-7. Atualiza `kv-state` com novos hashes
-8. Retorna JSON padronizado com novos documentos
+2. Faz fetch das páginas de listagem via `httpFetch()` (função interna em `src/mcp/httpFetchTool.ts`)
+3. Extrai links e metadados (título, data, URL) via regex HTML
+4. Carrega estado anterior de `agents/.cache/portal-state.json` (gerenciamento interno de estado)
+5. Filtra apenas documentos novos (deduplicação por `contentHash`)
+6. Gera `contentHash` para cada documento novo (SHA256 de `portalId:url:title`)
+7. Atualiza estado em `portal-state.json` com novos hashes
+8. Retorna array de `PortalDocument[]` com novos documentos
+
+**Implementação**: `watchPortals()` em `src/agents/maintenance.ts`
 
 **Formato de Saída**:
 ```json
@@ -156,19 +200,22 @@ O Tax Virtual Office utiliza uma arquitetura baseada em **agentes especializados
 
 **Características**:
 - **Modelo**: `gpt-5.1`
-- **Ferramentas**: `vector-stores-metadata`, `logger`
+- **Ferramentas MCP**: `vector-stores-metadata`, `logger` (via Agents SDK)
 - **Prompt**: `agents/prompts/tax-document-classifier.system.md`
 
 **Fluxo de Trabalho**:
-1. Recebe metadados do documento (portal, título, URL, datas)
-2. Consulta `vector-stores-metadata` para ler `agents/vectorstores.yaml`
-3. Aplica heurísticas baseadas em:
+1. Recebe metadados do documento (portal, título, URL, datas, metadados do crawler quando disponíveis)
+2. **Primeiro**: Invoca agente LLM (`invokeClassifierAgent`) que consulta `vector-stores-metadata` para ler `agents/vectorstores.yaml`
+3. **Fallback**: Se o agente falhar, usa heurísticas baseadas em:
    - Título (keywords: "NT", "Nota Técnica", "Lei Complementar", etc.)
    - Portal de origem (`portalId`, `portalType`)
    - URL (padrões: `/nt/`, `/lei/`, `/ajuste/`, `/schema/`)
+   - Metadados do crawler (`domain`, `natureza`, `modelo`, `assuntos`, `fileName`)
 4. Calcula `confidenceScore` (0.0 a 1.0)
 5. Gera `rationale` explicando a decisão
-6. Retorna classificação com tags
+6. Retorna classificação com `vectorStoreId`, `tags`, `confidenceScore` e `rationale`
+
+**Implementação**: `classifyDocument()` em `src/agents/maintenance.ts` (usa agente LLM primeiro, fallback para heurísticas)
 
 **Formato de Saída**:
 ```json
@@ -180,11 +227,16 @@ O Tax Virtual Office utiliza uma arquitetura baseada em **agentes especializados
 }
 ```
 
-**Heurísticas de Classificação**:
-- Títulos com "NT", "Nota Técnica", "Manual", "schema", "XML" → `normas-tecnicas-nfe-nfce-cte` ou `legis-nfe-exemplos-xml`
+**Heurísticas de Classificação** (Fallback quando metadados do crawler não estão disponíveis):
+- Títulos com "NT", "Nota Técnica" + domínio → `normas-tecnicas-{domain}` (nfe/nfce/cte)
+- Títulos com "Manual", "MOC" + domínio → `manuais-{domain}` (nfe/nfce/cte)
+- Títulos com "schema", "XML", "XSD" + domínio → `esquemas-xml-{domain}` (nfe/nfce/cte)
 - Títulos com "Lei Complementar", "LC", "Decreto" (nacional) → `legislacao-nacional-ibs-cbs-is`
-- CONFAZ, Ajustes SINIEF, convênios → `documentos-estaduais-ibc-cbs`
+- CONFAZ, Ajustes SINIEF, convênios → `ajustes-sinief-{domain}` ou `convenios-icms`
 - "Parecer", "Solução de Consulta", "Acórdão" → `jurisprudencia-tributaria`
+- Tabelas (CFOP, NCM, etc.) → `tabelas-{tipo}` (cfop, ncm, aliquotas, etc.)
+
+**Nota**: O classifier usa agente LLM primeiro, que considera metadados do crawler quando disponíveis. As heurísticas são usadas apenas como fallback.
 
 #### 4.3. Uploader de Documentos (`tax-document-uploader`)
 
@@ -192,91 +244,137 @@ O Tax Virtual Office utiliza uma arquitetura baseada em **agentes especializados
 
 **Características**:
 - **Modelo**: `4o-mini` (modelo mais leve para tarefas simples)
-- **Ferramentas**: `http-download`, `file-search-upload`, `storage`, `logger`
+- **Ferramentas MCP**: `logger` (via Agents SDK)
+- **Funcionalidades Internas**: Usa `httpFetch()` diretamente e salva arquivos via `fs.writeFileSync()`
 - **Prompt**: `agents/prompts/tax-document-uploader.system.md`
 
 **Fluxo de Trabalho**:
 1. Recebe documento classificado (URL, vector store, tags)
-2. Baixa conteúdo via `http-download`
-3. Salva em `agents/.cache/downloads/` com nome padronizado
+2. Baixa conteúdo via `httpFetch()` (função interna, não MCP tool)
+3. Salva em `agents/.cache/downloads/` com nome padronizado usando `fs.writeFileSync()`
 4. Registra destino e tags no vector store
-5. Opcionalmente envia para File Search via `file-search-upload`
+5. **Nota**: `file-search-upload` não está implementado - funcionalidade pode ser adicionada no futuro
+
+**Implementação**: `uploadDocument()` em `src/agents/maintenance.ts`
 
 ## Vector Stores
 
-Os vector stores são repositórios de conhecimento especializados definidos em `agents/vectorstores.yaml`:
+Os vector stores são repositórios de conhecimento especializados definidos em `agents/vectorstores.yaml`.
 
-### 1. `legislacao-nacional-ibs-cbs-is`
-- **Descrição**: Leis complementares, emendas, decretos, regulamentos sobre IBS, CBS e IS em âmbito nacional.
-- **Uso**: Consultas sobre reforma tributária, EC 132/2023, LC 214/2025.
+**📚 Documentação Completa**: Para informações detalhadas sobre todos os vector stores disponíveis, organização por categoria, classificação de documentos e uso pelos agentes, consulte [docs/VECTOR_STORES.md](VECTOR_STORES.md).
 
-### 2. `normas-tecnicas-nfe-nfce-cte`
-- **Descrição**: Notas técnicas, manuais, esquemas XML, FAQs oficiais de NF-e, NFC-e, CT-e, MDF-e.
-- **Uso**: Questões técnicas sobre documentos fiscais eletrônicos.
+### Resumo
 
-### 3. `documentos-estaduais-ibc-cbs`
-- **Descrição**: Normas estaduais sobre IBS/CBS/IS vinculadas aos documentos eletrônicos.
-- **Uso**: Regras específicas de estados.
+O sistema utiliza **30+ vector stores** organizados nas seguintes categorias:
 
-### 4. `jurisprudencia-tributaria`
-- **Descrição**: Jurisprudência e pareceres relevantes à reforma tributária e documentos fiscais.
-- **Uso**: Consultas sobre interpretações e decisões.
+- **Tabelas** (compartilhadas e específicas): CFOP, NCM, meios de pagamento, alíquotas, códigos, IBS/CBS
+- **Normas Técnicas** (por documento): NF-e, NFC-e, CT-e
+- **Manuais** (por documento): NF-e, NFC-e, CT-e
+- **Informes Técnicos** (por documento): NF-e, NFC-e, CT-e
+- **Schemas XML** (por documento): NF-e, NFC-e, CT-e
+- **Ajustes SINIEF**: específicos por documento e gerais
+- **CONFAZ**: convênios ICMS e atos COTEPE
+- **Legislação**: nacional (IBS/CBS/IS) e documentos estaduais
+- **Jurisprudência**: pareceres e decisões tributárias
 
-### 5. `legis-nfe-exemplos-xml`
-- **Descrição**: XMLs de exemplo, esquemas e guias de implementação específicos de NF-e.
-- **Uso**: Referências técnicas e exemplos práticos.
+Cada vector store é otimizado para um tipo específico de conteúdo e é consultado via `file-search` pelos agentes conforme a natureza da consulta.
 
 ## Ferramentas MCP (Model Context Protocol)
 
-### 1. `file-search`
+As ferramentas MCP são integradas com o OpenAI Agents SDK e permitem que os agentes interajam com fontes de dados externas e realizem operações específicas.
+
+### Ferramentas MCP Implementadas (Tools do Agents SDK)
+
+#### 1. `file-search` ✅
+- **Tipo**: MCP Tool (Agents SDK)
 - **Uso**: Busca em vector stores e arquivos locais.
 - **Agentes**: coordinator, specialists, classifier
 - **Prioridade**: Fonte primária de informação
+- **Implementação**: `src/agents/tools.ts` → `src/mcp/fileSearchTool.ts`
 
-### 2. `web`
+#### 2. `web` ⚠️
+- **Tipo**: MCP Tool (Agents SDK) - **Placeholder**
 - **Uso**: Consultas a sites oficiais (apenas domínios `.gov.br`, `.fazenda.gov.br`, etc.).
 - **Agentes**: coordinator
 - **Restrição**: Apenas para dados objetivos (datas, números de lei, URLs oficiais)
+- **Status**: Implementado como placeholder - requer integração completa com `http-fetch`
+- **Implementação**: `src/agents/tools.ts`
 
-### 3. `http-fetch`
-- **Uso**: Obter HTML de páginas de portais fiscais.
-- **Agentes**: tax-portal-watcher
-- **Implementação**: `src/mcp/httpFetchTool.ts`
-
-### 4. `http-download`
-- **Uso**: Baixar arquivos de documentos fiscais.
-- **Agentes**: tax-document-uploader
-- **Implementação**: `src/mcp/httpDownloadTool.ts`
-
-### 5. `kv-state`
-- **Uso**: Armazenar estado de documentos já processados (deduplicação).
-- **Agentes**: tax-portal-watcher
-- **Implementação**: `src/mcp/kvStateTool.ts`
-- **Armazenamento**: `agents/.cache/portal-state.json`
-
-### 6. `vector-stores-metadata`
+#### 3. `vector-stores-metadata` ✅
+- **Tipo**: MCP Tool (Agents SDK)
 - **Uso**: Ler configuração de vector stores disponíveis.
 - **Agentes**: tax-document-classifier
 - **Fonte**: `agents/vectorstores.yaml`
+- **Implementação**: `src/agents/tools.ts` → `src/mcp/vectorStoresMetadataTool.ts`
 
-### 7. `file-search-upload`
-- **Uso**: Enviar documentos para File Search após processamento.
-- **Agentes**: tax-document-uploader
-
-### 8. `storage`
-- **Uso**: Persistir arquivos baixados.
-- **Agentes**: tax-document-uploader
-- **Implementação**: `src/mcp/storageTool.ts`
-- **Localização**: `agents/.cache/downloads/`
-
-### 9. `logger`
+#### 4. `logger` ✅
+- **Tipo**: MCP Tool (Agents SDK)
 - **Uso**: Registrar decisões, chamadas de ferramentas e traces.
 - **Agentes**: Todos
-- **Implementação**: `src/mcp/loggerTool.ts`
+- **Implementação**: `src/agents/tools.ts` → `src/utils/logger.ts`
 
-### 10. `task-queue`
+### Funcionalidades Internas (Não são MCP Tools)
+
+As seguintes funcionalidades são implementadas diretamente no código e **não** são MCP tools expostas aos agentes:
+
+#### `http-fetch`
+- **Tipo**: Função interna
+- **Uso**: Obter HTML de páginas de portais fiscais.
+- **Agentes**: tax-portal-watcher (via código, não via tool)
+- **Implementação**: `src/mcp/httpFetchTool.ts`
+- **Nota**: Usado internamente por `watchPortals()` em `src/agents/maintenance.ts`
+
+#### `http-download`
+- **Tipo**: Funcionalidade interna (usa `http-fetch`)
+- **Uso**: Baixar conteúdo de documentos fiscais.
+- **Agentes**: tax-document-uploader (via código, não via tool)
+- **Implementação**: `uploadDocument()` em `src/agents/maintenance.ts` usa `httpFetch()` diretamente
+- **Nota**: Não existe como MCP tool separado - o upload usa `httpFetch` e salva diretamente
+
+#### `kv-state`
+- **Tipo**: Funcionalidade interna (gerenciamento de estado)
+- **Uso**: Armazenar estado de documentos já processados (deduplicação).
+- **Agentes**: tax-portal-watcher (via código, não via tool)
+- **Armazenamento**: `agents/.cache/portal-state.json`
+- **Implementação**: Funções `loadPortalState()`, `persistPortalState()`, `hasSeen()`, `rememberDocument()` em `src/agents/maintenance.ts`
+- **Nota**: Não é um MCP tool - é gerenciamento de estado interno via arquivo JSON
+
+#### `storage`
+- **Tipo**: Funcionalidade interna (salvamento de arquivos)
+- **Uso**: Persistir arquivos baixados.
+- **Agentes**: tax-document-uploader (via código, não via tool)
+- **Localização**: `agents/.cache/downloads/`
+- **Implementação**: `uploadDocument()` em `src/agents/maintenance.ts` salva arquivos diretamente usando `fs.writeFileSync()`
+- **Nota**: Não é um MCP tool - salvamento é feito diretamente no código
+
+### Ferramentas Planejadas (Não Implementadas)
+
+#### `file-search-upload`
+- **Tipo**: Planejado (não implementado)
+- **Uso**: Enviar documentos para File Search após processamento.
+- **Agentes**: tax-document-uploader
+- **Status**: ⏸️ Não implementado - funcionalidade pode ser adicionada no futuro
+
+#### `task-queue`
+- **Tipo**: Planejado (não implementado)
 - **Uso**: Enfileirar documentos para processamento posterior.
 - **Agentes**: tax-portal-watcher (opcional)
+- **Status**: ⏸️ Não implementado - funcionalidade pode ser adicionada no futuro
+
+### Resumo por Tipo
+
+| Ferramenta | Tipo | Status | Implementação |
+|------------|------|--------|---------------|
+| `file-search` | MCP Tool | ✅ Implementado | `src/agents/tools.ts` |
+| `web` | MCP Tool | ⚠️ Placeholder | `src/agents/tools.ts` |
+| `vector-stores-metadata` | MCP Tool | ✅ Implementado | `src/agents/tools.ts` |
+| `logger` | MCP Tool | ✅ Implementado | `src/agents/tools.ts` |
+| `http-fetch` | Função interna | ✅ Implementado | `src/mcp/httpFetchTool.ts` |
+| `http-download` | Função interna | ✅ Implementado | Via `httpFetch` em `maintenance.ts` |
+| `kv-state` | Estado interno | ✅ Implementado | `maintenance.ts` (JSON) |
+| `storage` | Função interna | ✅ Implementado | `maintenance.ts` (fs) |
+| `file-search-upload` | Planejado | ⏸️ Não implementado | - |
+| `task-queue` | Planejado | ⏸️ Não implementado | - |
 
 ## Fluxos de Trabalho
 
@@ -445,10 +543,10 @@ interface UserQueryResponse {
 
 ```json
 {
-  "targetVectorStoreId": "normas-tecnicas-nfe-nfce-cte",
-  "tags": ["portal:encat-nfce", "tipo:nota-tecnica", "ano:2025"],
+  "targetVectorStoreId": "normas-tecnicas-nfce",
+  "tags": ["portal:encat-nfce", "tipo:nota-tecnica", "ano:2025", "documento:nfce"],
   "confidenceScore": 0.85,
-  "rationale": "Título menciona 'Nota Técnica' e portal é especializado em NFC-e"
+  "rationale": "Título menciona 'Nota Técnica' e 'NFC-e'; portal é especializado em NFC-e. Metadados do crawler indicam domain='nfce' e natureza='NOTA_TECNICA'."
 }
 ```
 
@@ -679,7 +777,7 @@ curl -X POST http://localhost:3000/query \
 1. `runUserQueryWorkflow()` recebe a requisição
 2. `invokeCoordinator()` analisa a pergunta
 3. `pickSpecialists()` identifica keywords "nf-e" → seleciona `specialist-nfe`
-4. Coordinator consulta `file-search` em `normas-tecnicas-nfe-nfce-cte`
+4. Coordinator consulta `file-search` em vector stores relevantes (ex: `normas-tecnicas-nfe`, `manuais-nfe`)
 5. Coordinator monta plano de execução
 6. Resposta consolidada é retornada
 
@@ -761,7 +859,7 @@ Segundo a **Lei Complementar 214/2025, art. 43**, o ICMS continuará sendo calcu
 
 | Fonte                          | Tipo         | Referência                                       |
 |--------------------------------|--------------|--------------------------------------------------|
-| normas-tecnicas-nfe-nfce-cte   | vector store | NT 2019.001, seção C.5.2, Projeto NF-e         |
+| normas-tecnicas-nfe            | vector store | NT 2019.001, seção C.5.2, Projeto NF-e         |
 | legislacao-nacional-ibs-cbs-is | vector store | LC 214/2025, arts. 43–50, Ministério da Fazenda |
 | specialist-nfe                 | especialista | Análise técnica de campos XML                    |
 | legislacao-ibs-cbs             | especialista | EC 132/2023, cronograma de transição             |
@@ -797,15 +895,16 @@ Segundo a **Lei Complementar 214/2025, art. 43**, o ICMS continuará sendo calcu
 2. Analisa título: contém "Nota Técnica" e "NFC-e"
 3. Analisa portal: `encat-nfce` é especializado em NFC-e
 4. Consulta `vectorstores.yaml` para opções disponíveis
-5. Calcula scores:
-   - `normas-tecnicas-nfe-nfce-cte`: score 4 (título menciona "Nota Técnica" e "NFC-e")
+5. Agente LLM analisa metadados e calcula scores:
+   - `normas-tecnicas-nfce`: score alto (domain='nfce', natureza='NOTA_TECNICA')
+   - `normas-tecnicas-nfe`: score baixo (documento é NFC-e, não NF-e)
    - `legislacao-nacional-ibs-cbs-is`: score 0 (não relacionado)
    - Outros: scores menores
 
 **Output** (classificação):
 ```json
 {
-  "targetVectorStoreId": "normas-tecnicas-nfe-nfce-cte",
+  "targetVectorStoreId": "normas-tecnicas-nfce",
   "tags": [
     "portal:encat-nfce",
     "tipo:nota-tecnica",
@@ -813,13 +912,13 @@ Segundo a **Lei Complementar 214/2025, art. 43**, o ICMS continuará sendo calcu
     "documento:nfce"
   ],
   "confidenceScore": 0.85,
-  "rationale": "Título menciona 'Nota Técnica' e 'NFC-e'; portal é especializado em NFC-e (encat-nfce). Priorizando store de normas técnicas."
+  "rationale": "Metadados do crawler indicam domain='nfce' e natureza='NOTA_TECNICA'. Título menciona 'Nota Técnica' e 'NFC-e'; portal é especializado em NFC-e (encat-nfce)."
 }
 ```
 
 **Próximos Passos**:
-1. `uploadDocument()` baixa o conteúdo da URL
-2. Salva em `agents/.cache/downloads/normas-tecnicas-nfe-nfce-cte-a1b2c3d4e5f6.html`
+1. `uploadDocument()` baixa o conteúdo da URL via `httpFetch()`
+2. Salva em `agents/.cache/downloads/normas-tecnicas-nfce-a1b2c3d4e5f6.html`
 3. Registra no vector store com as tags fornecidas
 4. Opcionalmente envia para File Search
 
@@ -939,7 +1038,7 @@ traces.forEach(trace => {
 logInfo("Especialista acionado", {
   agentId: "specialist-nfe",
   question: "Prazo de cancelamento",
-  vectorStores: ["normas-tecnicas-nfe-nfce-cte"]
+  vectorStores: ["normas-tecnicas-nfe", "manuais-nfe"]
 });
 ```
 
