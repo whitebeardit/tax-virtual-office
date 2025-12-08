@@ -57,6 +57,14 @@ function loadPortalsCatalog(): PortalDefinition[] {
   return cachedPortals;
 }
 
+/**
+ * Carrega o catálogo de vector stores do arquivo YAML.
+ * Usa cache para performance, mas sempre lê do arquivo na primeira chamada.
+ * 
+ * IMPORTANTE: O cache persiste durante a execução. Se você atualizar
+ * o arquivo vectorstores.yaml, será necessário reiniciar o servidor
+ * ou chamar clearVectorStoresCache() para ver as mudanças.
+ */
 function loadVectorStoresCatalog(): VectorStoreDefinition[] {
   if (cachedVectorStores) return cachedVectorStores;
 
@@ -71,6 +79,14 @@ function loadVectorStoresCatalog(): VectorStoreDefinition[] {
 
   cachedVectorStores = parsed.vectorStores;
   return cachedVectorStores;
+}
+
+/**
+ * Limpa o cache de vector stores, forçando recarregamento do arquivo YAML.
+ * Útil durante desenvolvimento quando o arquivo vectorstores.yaml é atualizado.
+ */
+export function clearVectorStoresCache(): void {
+  cachedVectorStores = undefined;
 }
 
 export async function watchPortals(): Promise<PortalDocument[]> {
@@ -299,18 +315,9 @@ export async function uploadDocument(
 
 function chooseVectorStore(document: PortalDocument): string {
   const catalog = loadVectorStoresCatalog();
-  const portalType = document.portalType?.toLowerCase();
-  const normalizedTitle = document.title.toLowerCase();
-
-  if (normalizedTitle.includes("nota tecnica") || normalizedTitle.includes("faq")) {
-    return findVectorStore(catalog, "normas-tecnicas-nfe-nfce-cte");
-  }
-
-  if (portalType === "estadual") {
-    return findVectorStore(catalog, "documentos-estaduais-ibc-cbs");
-  }
-
-  return findVectorStore(catalog, "legislacao-nacional-ibs-cbs-is");
+  // Fallback: retorna o primeiro vector store do catálogo
+  // A lógica de escolha deve estar em scoreVectorStores
+  return catalog[0]?.id || "";
 }
 
 function findVectorStore(
@@ -534,43 +541,122 @@ function logPortalMetrics(
 function scoreVectorStores(document: PortalDocument) {
   const catalog = loadVectorStoresCatalog();
   const normalizedTitle = document.title.toLowerCase();
+  const normalizedUrl = document.url.toLowerCase();
+  const portalType = document.portalType?.toLowerCase() || "";
   const rationale: string[] = [];
 
   const scores = catalog.map((store) => {
     let score = 0;
+    const storeId = store.id.toLowerCase();
+    const storeDescription = store.description.toLowerCase();
 
-    if (document.portalType === "estadual" &&
-        store.id === "documentos-estaduais-ibc-cbs") {
-      score += 3;
-      rationale.push("Portal estadual prioriza store de documentos estaduais.");
+    // Heurísticas baseadas em padrões genéricos (sem IDs hardcoded)
+
+    // 1. Match por tipo de documento no ID do store
+    if (normalizedTitle.includes("nf-e") || normalizedTitle.includes("nfe") || normalizedUrl.includes("/nfe")) {
+      if (storeId.includes("nfe") && !storeId.includes("nfce")) {
+        score += 5;
+        rationale.push("Título/URL menciona NF-e e store é específico para NF-e.");
+      }
     }
 
-    if (normalizedTitle.includes("nf-e") || normalizedTitle.includes("nfe")) {
-      if (store.id.includes("nfe")) {
+    if (normalizedTitle.includes("nfce") || normalizedTitle.includes("nfc-e") || normalizedUrl.includes("/nfce")) {
+      if (storeId.includes("nfce")) {
+        score += 5;
+        rationale.push("Título/URL menciona NFC-e e store é específico para NFC-e.");
+      }
+    }
+
+    if (normalizedTitle.includes("ct-e") || normalizedTitle.includes("cte") || normalizedUrl.includes("/cte")) {
+      if (storeId.includes("cte")) {
+        score += 5;
+        rationale.push("Título/URL menciona CT-e e store é específico para CT-e.");
+      }
+    }
+
+    // 2. Match por natureza do documento
+    if (normalizedTitle.includes("nota técnica") || normalizedTitle.includes("nt ") || normalizedUrl.includes("/nt/")) {
+      if (storeId.includes("normas-tecnicas")) {
         score += 4;
-        rationale.push("Título menciona NF-e, priorizando stores especializados.");
-      }
-      if (store.id === "normas-tecnicas-nfe-nfce-cte") {
-        score += 2;
+        rationale.push("Documento é Nota Técnica e store é de normas técnicas.");
       }
     }
 
-    if (normalizedTitle.includes("nfce") || normalizedTitle.includes("nfc-e")) {
-      if (store.id === "normas-tecnicas-nfe-nfce-cte") {
+    if (normalizedTitle.includes("manual") || normalizedTitle.includes("moc") || normalizedUrl.includes("/manual/")) {
+      if (storeId.includes("manual")) {
         score += 4;
-        rationale.push("Título cita NFC-e; armazenar em normas técnicas.");
+        rationale.push("Documento é Manual e store é de manuais.");
       }
     }
 
-    if (normalizedTitle.includes("ajuste") || normalizedTitle.includes("sinief")) {
-      if (store.id === "legislacao-nacional-ibs-cbs-is") {
+    if (normalizedTitle.includes("tabela") || normalizedUrl.includes("/tabela/")) {
+      if (storeId.includes("tabela")) {
+        score += 4;
+        rationale.push("Documento é Tabela e store é de tabelas.");
+      }
+    }
+
+    if (normalizedTitle.includes("informe") || normalizedTitle.includes("comunicado") || normalizedUrl.includes("/informe/")) {
+      if (storeId.includes("informe")) {
+        score += 4;
+        rationale.push("Documento é Informe Técnico e store é de informes.");
+      }
+    }
+
+    if (normalizedTitle.includes("schema") || normalizedTitle.includes("xsd") || normalizedUrl.includes("/schema/") || normalizedUrl.includes(".xsd")) {
+      if (storeId.includes("esquema") || storeId.includes("xml")) {
+        score += 4;
+        rationale.push("Documento é Schema XML e store é de esquemas XML.");
+      }
+    }
+
+    if (normalizedTitle.includes("ajuste") || normalizedTitle.includes("sinief") || normalizedUrl.includes("/ajuste/")) {
+      if (storeId.includes("ajuste") || storeId.includes("sinief")) {
+        score += 4;
+        rationale.push("Documento é Ajuste SINIEF e store é de ajustes.");
+      }
+    }
+
+    if (normalizedTitle.includes("convênio") || normalizedTitle.includes("convenio") || normalizedUrl.includes("/convenio/")) {
+      if (storeId.includes("convenio")) {
+        score += 4;
+        rationale.push("Documento é Convênio e store é de convênios.");
+      }
+    }
+
+    if (normalizedTitle.includes("ato") || normalizedTitle.includes("cotepe") || normalizedUrl.includes("/ato/")) {
+      if (storeId.includes("ato") || storeId.includes("cotepe")) {
+        score += 4;
+        rationale.push("Documento é Ato COTEPE e store é de atos.");
+      }
+    }
+
+    // 3. Match por tipo de portal
+    if (portalType === "estadual") {
+      if (storeId.includes("estadual") || storeDescription.includes("estadual")) {
         score += 3;
-        rationale.push("Ajustes SINIEF vão para legislação nacional.");
+        rationale.push("Portal estadual e store é para documentos estaduais.");
       }
     }
 
-    if (store.description.toLowerCase().includes(document.portalType || "")) {
+    if (portalType === "nacional") {
+      if (storeId.includes("nacional") || storeDescription.includes("nacional")) {
+        score += 2;
+        rationale.push("Portal nacional e store é para documentos nacionais.");
+      }
+    }
+
+    // 4. Match por descrição do store
+    if (storeDescription.includes(portalType)) {
       score += 1;
+    }
+
+    // 5. Match genérico por palavras-chave na descrição
+    const titleKeywords = normalizedTitle.split(/\s+/);
+    for (const keyword of titleKeywords) {
+      if (keyword.length > 3 && storeDescription.includes(keyword)) {
+        score += 1;
+      }
     }
 
     return { id: store.id, score };
@@ -579,11 +665,15 @@ function scoreVectorStores(document: PortalDocument) {
   const best = scores.sort((a, b) => b.score - a.score)[0];
   const vectorStoreId = best?.id || chooseVectorStore(document);
 
+  // Coletar rationale apenas do melhor match
+  const bestStore = catalog.find((s) => s.id === best?.id);
+  const finalRationale = bestStore && best.score > 0
+    ? `Classificado para '${bestStore.id}' baseado em padrões do título, URL e tipo de portal. Score: ${best.score}.`
+    : "Roteamento por heurísticas genéricas de título e tipo de portal.";
+
   return {
     vectorStoreId,
     score: best?.score || 0,
-    rationaleFromHeuristics: rationale.length
-      ? rationale.join(" ")
-      : "Roteamento por heurísticas de título e tipo de portal.",
+    rationaleFromHeuristics: finalRationale,
   };
 }
