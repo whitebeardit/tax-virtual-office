@@ -21,4 +21,4 @@ services:
     environment:
       - APP_MODE=daily-portals-scan
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-    entrypoint: ["node", "dist/index.js"]
+    entrypoint: ["node", "dist/src/index.js"]
