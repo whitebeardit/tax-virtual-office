@@ -1,5 +1,7 @@
 import { Express, Request, Response } from "express";
 import { runDailyPortalsScan } from "../../workflows/daily-portals-scan.js";
+import { classifyDocument } from "../../agents/maintenance.js";
+import { PortalDocument } from "../../agents/types.js";
 import { logger } from "../../utils/logger.js";
 
 export function registerAdminRoutes(app: Express) {
@@ -68,6 +70,115 @@ export function registerAdminRoutes(app: Express) {
       res.json({ status: "completed", timestamp: new Date().toISOString() });
     } catch (err) {
       logger.error({ error: err }, "/admin/run-daily failed");
+      res.status(500).json({ error: "internal_error" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /admin/classify-document:
+   *   post:
+   *     summary: Classifica um documento fiscal usando o tax-document-classifier
+   *     tags: [Admin]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - portalId
+   *               - title
+   *               - url
+   *             properties:
+   *               portalId:
+   *                 type: string
+   *                 description: ID do portal fiscal
+   *                 example: "encat-nfce"
+   *               portalType:
+   *                 type: string
+   *                 description: Tipo do portal (nacional ou estadual)
+   *                 example: "estadual"
+   *               title:
+   *                 type: string
+   *                 description: Título do documento
+   *                 example: "Nota Técnica NT 2024.001 - NFC-e"
+   *               url:
+   *                 type: string
+   *                 description: URL do documento
+   *                 example: "https://www.nfce.fazenda.sp.gov.br/nt/2024.001"
+   *               publishedAt:
+   *                 type: string
+   *                 format: date-time
+   *                 description: Data de publicação (opcional)
+   *               externalId:
+   *                 type: string
+   *                 description: ID externo do documento (opcional)
+   *     responses:
+   *       200:
+   *         description: Classificação do documento
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 vectorStoreId:
+   *                   type: string
+   *                   description: ID do vector store de destino
+   *                 tags:
+   *                   type: array
+   *                   items:
+   *                     type: string
+   *                   description: Tags associadas ao documento
+   *                 rationale:
+   *                   type: string
+   *                   description: Explicação da classificação
+   *                 score:
+   *                   type: number
+   *                   description: Score de confiança
+   *       400:
+   *         description: Erro de validação
+   *       500:
+   *         description: Erro interno
+   */
+  app.post("/admin/classify-document", async (req: Request, res: Response) => {
+    try {
+      const document: PortalDocument = {
+        portalId: req.body.portalId,
+        portalType: req.body.portalType,
+        title: req.body.title,
+        url: req.body.url,
+        publishedAt: req.body.publishedAt,
+        detectedAt: req.body.detectedAt || new Date().toISOString(),
+        externalId: req.body.externalId,
+      };
+
+      if (!document.portalId || !document.title || !document.url) {
+        return res.status(400).json({
+          error: "validation_error",
+          message: "portalId, title e url são obrigatórios",
+        });
+      }
+
+      logger.info(
+        { portalId: document.portalId, title: document.title },
+        "Classifying document"
+      );
+
+      const classification = await classifyDocument(document);
+
+      logger.info(
+        {
+          portalId: document.portalId,
+          vectorStoreId: classification.vectorStoreId,
+          score: classification.score,
+        },
+        "Document classified"
+      );
+
+      res.json(classification);
+    } catch (err) {
+      logger.error({ error: err }, "/admin/classify-document failed");
       res.status(500).json({ error: "internal_error" });
     }
   });
