@@ -52,7 +52,7 @@ agents:
 
   - id: tax-document-classifier
     name: Tax Document Classifier
-    model: gpt-5.1
+    model: gpt-4o-mini
     instructions_file: ./prompts/tax-document-classifier.system.md
     tools:
       - vector-stores-metadata
