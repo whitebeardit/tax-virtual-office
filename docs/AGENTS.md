@@ -292,12 +292,13 @@ As ferramentas MCP são integradas com o OpenAI Agents SDK e permitem que os age
 - **Prioridade**: Fonte primária de informação
 - **Implementação**: `src/agents/tools.ts` → `src/mcp/fileSearchTool.ts`
 
-#### 2. `web` ⚠️
-- **Tipo**: MCP Tool (Agents SDK) - **Placeholder**
+#### 2. `web` ✅
+- **Tipo**: MCP Tool (Agents SDK)
 - **Uso**: Consultas a sites oficiais (apenas domínios `.gov.br`, `.fazenda.gov.br`, etc.).
 - **Agentes**: coordinator
 - **Restrição**: Apenas para dados objetivos (datas, números de lei, URLs oficiais)
-- **Status**: Implementado como placeholder - requer integração completa com `http-fetch`
+- **Validação**: Valida URLs usando websearch/HTTP fetch antes de retornar ao usuário
+- **Status**: Implementado com validação de URLs e suporte a URLs alternativas
 - **Implementação**: `src/agents/tools.ts`
 
 #### 3. `vector-stores-metadata` ✅
@@ -366,7 +367,7 @@ As seguintes funcionalidades são implementadas diretamente no código e **não*
 | Ferramenta | Tipo | Status | Implementação |
 |------------|------|--------|---------------|
 | `file-search` | MCP Tool | ✅ Implementado | `src/agents/tools.ts` |
-| `web` | MCP Tool | ⚠️ Placeholder | `src/agents/tools.ts` |
+| `web` | MCP Tool | ✅ Implementado | `src/agents/tools.ts` |
 | `vector-stores-metadata` | MCP Tool | ✅ Implementado | `src/agents/tools.ts` |
 | `logger` | MCP Tool | ✅ Implementado | `src/agents/tools.ts` |
 | `http-fetch` | Função interna | ✅ Implementado | `src/mcp/httpFetchTool.ts` |
@@ -500,6 +501,72 @@ Todos os agentes seguem políticas rigorosas para evitar alucinações:
 - Baseia decisão apenas em metadados (não inventa conteúdo)
 - Usa `confidenceScore` conservador quando ambíguo
 - Nunca inventa vector stores que não existam
+
+## Política de URLs
+
+Todos os agentes seguem uma política rigorosa para validação e apresentação de URLs:
+
+### Validação de URLs
+- **SEMPRE** validar URLs usando a tool `web` antes de enviar ao usuário
+- A tool `web` valida automaticamente:
+  1. Se a URL é de um domínio oficial permitido
+  2. Se a URL está acessível (usando HTTP fetch)
+  3. Se não estiver acessível, fornece URL alternativa do site oficial
+
+### Inclusão de URLs do Arquivo Original
+- **SEMPRE** incluir a URL do arquivo original armazenado quando disponível nos metadados retornados por `file-search`
+- Os metadados dos documentos contêm o campo `fonte_oficial` com a URL original de onde o documento foi baixado
+- Apresente essa URL ao usuário como "URL do documento original" ou "Fonte oficial do documento"
+
+### Apresentação de URLs ao Usuário
+Quando incluir URLs na resposta:
+
+1. **URL do arquivo original armazenado** (quando disponível nos metadados):
+   ```
+   📄 **Documento original**: [URL do fonte_oficial]
+   ```
+
+2. **URL validada via web tool**:
+   - Se a URL for válida e acessível: inclua normalmente na resposta
+   - Se a URL não for acessível: **NÃO** inclua a URL inválida. Em vez disso, recomende:
+     ```
+     ⚠️ A URL original não está acessível no momento.
+     📌 **Recomendação**: Acesse o site oficial diretamente: [URL alternativa do site oficial]
+     ```
+
+3. **Sites oficiais permitidos** (use apenas estes):
+   - `*.gov.br` (todos os domínios do governo brasileiro)
+   - `*.fazenda.gov.br` (Ministério da Fazenda)
+   - `*.fazenda.sp.gov.br` (SEFAZ-SP)
+   - `*.fazenda.mg.gov.br` (SEFAZ-MG)
+   - `dfe-portal.svrs.rs.gov.br` (SVRS - SEFAZ Virtual RS)
+   - `confaz.fazenda.gov.br` (CONFAZ)
+
+4. **Portais principais**:
+   - Portal Nacional NF-e: `https://www.nfe.fazenda.gov.br/portal`
+   - SVRS NF-e/NFC-e/CT-e/MDF-e: `https://dfe-portal.svrs.rs.gov.br`
+   - CONFAZ: `https://www.confaz.fazenda.gov.br`
+
+### Regras de URLs
+- **NUNCA** envie URLs ao usuário sem validar primeiro usando a tool `web`
+- **NUNCA** inclua URLs de domínios não oficiais (blogs, consultorias privadas, etc.)
+- **SEMPRE** inclua a URL do arquivo original (`fonte_oficial`) quando disponível nos metadados
+- **SEMPRE** forneça URL alternativa do site oficial quando a URL original não estiver acessível
+- **SEMPRE** recomende consultar o site oficial diretamente quando a URL não for válida
+
+### Exemplo de Formato
+```
+**Fontes consultadas:**
+
+| Fonte | Tipo | Referência | URL Original |
+|-------|------|------------|--------------|
+| normas-tecnicas-nfe | vector store | NT 2019.001, seção C.2 | https://www.nfe.fazenda.gov.br/portal/... |
+| legislacao-nacional-ibs-cbs-is | vector store | LC 214/2025, arts. 43–50 | https://www.planalto.gov.br/... |
+
+📄 **URLs dos documentos originais:**
+- NT 2019.001: https://www.nfe.fazenda.gov.br/portal/listaConteudo.aspx?...
+- LC 214/2025: https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214.htm
+```
 
 ## Formato de Respostas
 
