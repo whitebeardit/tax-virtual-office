@@ -50,9 +50,10 @@ INFORMES TÉCNICOS (por documento):
 - informes-tecnicos-cte: Informes CT-e/MDF-e
 
 SCHEMAS XML (por documento):
-- esquemas-xml-nfe: Schemas XSD NF-e
-- esquemas-xml-nfce: Schemas XSD NFC-e
-- esquemas-xml-cte: Schemas XSD CT-e/MDF-e
+- esquemas-xml-nfe: Schemas XSD NF-e (armazenados como .xml)
+- esquemas-xml-nfce: Schemas XSD NFC-e (armazenados como .xml)
+- esquemas-xml-cte: Schemas XSD CT-e/MDF-e (armazenados como .xml)
+- NOTA: Os arquivos XSD são armazenados com extensão .xml (não .xsd) pois a OpenAI não aceita .xsd. Ao buscar schemas XSD mencionados pelo usuário, procure por arquivos .xml com o mesmo nome base.
 
 AJUSTES SINIEF:
 - ajustes-sinief-nfe: Ajustes específicos NF-e

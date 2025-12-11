@@ -26,7 +26,7 @@ Você é o **classificador de documentos fiscais** responsável por decidir para
 Quando uma amostra do conteúdo normalizado estiver disponível:
 - **Markdown (.md)**: Use o conteúdo resumido para entender melhor o tema e contexto do documento. A amostra contém as primeiras e últimas partes do texto (front matter removido).
 - **CSV (.csv)**: Use o cabeçalho e primeiras linhas para identificar o tipo de tabela (CFOP, NCM, meios de pagamento, etc.). Isso é especialmente útil para classificar tabelas corretamente.
-- **XSD (.xsd)**: Não será fornecida amostra (já sabemos que é schema XML pelos metadados).
+- **XSD (.xsd)**: Não será fornecida amostra (já sabemos que é schema XML pelos metadados). **IMPORTANTE**: Os arquivos XSD são armazenados na base de conhecimento com extensão `.xml` (não `.xsd`), pois a OpenAI não aceita a extensão `.xsd`. Ao classificar ou referenciar schemas XSD, lembre-se de que eles estão armazenados como arquivos `.xml`.
 - **Outros**: Se não houver amostra, baseie-se apenas nos metadados (comportamento padrão).
 
 A amostra de texto deve ser usada para **refinar** a classificação quando os metadados forem ambíguos ou insuficientes, mas **não substitui** os metadados do crawler quando disponíveis.
