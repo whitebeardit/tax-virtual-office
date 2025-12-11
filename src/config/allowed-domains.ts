@@ -13,9 +13,21 @@ interface DomainConfig {
   examples: string[];
 }
 
+interface PortalConfig {
+  id: string;
+  name: string;
+  urlBase: string;
+  domain: string;
+  type: string;
+  sections?: string[];
+}
+
 interface DocumentSourcesConfig {
   allowedDomains: {
     domains: DomainConfig[];
+  };
+  portals?: {
+    list: PortalConfig[];
   };
 }
 
@@ -145,4 +157,104 @@ export function validateUrl(url: string): { valid: boolean; error?: string } {
   }
 
   return { valid: true };
+}
+
+/**
+ * Obtém a URL base do site oficial baseado no tipo de documento ou portal
+ */
+export function getOfficialSiteUrl(documentType?: string, portalId?: string): string | null {
+  const config = loadConfig();
+  
+  // Se portalId fornecido, buscar na lista de portais
+  if (portalId && config.portals) {
+    const portal = config.portals.list.find((p) => p.id === portalId);
+    if (portal) {
+      return portal.urlBase;
+    }
+  }
+  
+  // Mapear tipo de documento para portal
+  const documentTypeMap: Record<string, string> = {
+    nfe: "nfe",
+    nfce: "nfce-svrs",
+    cte: "mdfe-svrs", // CT-e usa o mesmo portal que MDF-e no SVRS
+    mdfe: "mdfe-svrs",
+    confaz: "confaz",
+  };
+  
+  if (documentType) {
+    const normalizedType = documentType.toLowerCase().replace(/[_-]/g, "");
+    const mappedPortalId = documentTypeMap[normalizedType];
+    if (mappedPortalId && config.portals) {
+      const portal = config.portals.list.find((p) => p.id === mappedPortalId);
+      if (portal) {
+        return portal.urlBase;
+      }
+    }
+  }
+  
+  // Fallback: retornar portal NF-e como padrão
+  if (config.portals) {
+    const defaultPortal = config.portals.list.find((p) => p.id === "nfe");
+    if (defaultPortal) {
+      return defaultPortal.urlBase;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Extrai o tipo de documento ou portal de uma URL
+ */
+export function extractDocumentTypeFromUrl(url: string): { type?: string; portalId?: string } {
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname.toLowerCase();
+    const pathname = urlObj.pathname.toLowerCase();
+    
+    // Detectar portal por hostname
+    if (hostname.includes("nfe.fazenda.gov.br")) {
+      return { type: "nfe", portalId: "nfe" };
+    }
+    if (hostname.includes("confaz.fazenda.gov.br")) {
+      return { type: "confaz", portalId: "confaz" };
+    }
+    if (hostname.includes("svrs.rs.gov.br")) {
+      // Detectar tipo pelo path
+      if (pathname.includes("/nfe/")) {
+        return { type: "nfe", portalId: "nfe-svrs" };
+      }
+      if (pathname.includes("/nfce/")) {
+        return { type: "nfce", portalId: "nfce-svrs" };
+      }
+      if (pathname.includes("/cte/")) {
+        return { type: "cte", portalId: "mdfe-svrs" };
+      }
+      if (pathname.includes("/mdfe/")) {
+        return { type: "mdfe", portalId: "mdfe-svrs" };
+      }
+    }
+    
+    // Tentar detectar pelo path
+    if (pathname.includes("/nfe") || pathname.includes("nfe")) {
+      return { type: "nfe" };
+    }
+    if (pathname.includes("/nfce") || pathname.includes("nfce")) {
+      return { type: "nfce" };
+    }
+    if (pathname.includes("/cte") || pathname.includes("cte")) {
+      return { type: "cte" };
+    }
+    if (pathname.includes("/mdfe") || pathname.includes("mdfe")) {
+      return { type: "mdfe" };
+    }
+    if (pathname.includes("/confaz") || pathname.includes("confaz")) {
+      return { type: "confaz", portalId: "confaz" };
+    }
+  } catch {
+    // URL inválida, retornar vazio
+  }
+  
+  return {};
 }

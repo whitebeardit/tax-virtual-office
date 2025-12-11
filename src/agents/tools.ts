@@ -9,8 +9,10 @@ import { tool } from "@openai/agents";
 import { z } from "zod";
 import { fileSearch, type FileSearchQuery } from "../mcp/fileSearchTool.js";
 import { logger } from "../utils/logger.js";
-import { validateUrl } from "../config/allowed-domains.js";
+import { validateUrl, getOfficialSiteUrl, extractDocumentTypeFromUrl } from "../config/allowed-domains.js";
 import { getVectorStoresMetadata } from "../mcp/vectorStoresMetadataTool.js";
+import { lookupSchema, findRelatedSchemas } from "../mcp/schemaLookupTool.js";
+import { httpFetch } from "../mcp/httpFetchTool.js";
 
 /**
  * Tool: file-search
@@ -20,6 +22,10 @@ export const fileSearchTool = tool({
   name: "file_search",
   description: `Busca em vector stores e arquivos locais para encontrar informações relevantes.
   
+IMPORTANTE: Os documentos armazenados contêm metadados com URLs originais (campo fonte_oficial).
+Quando os resultados incluírem informações sobre documentos, SEMPRE inclua a URL original quando disponível nos metadados.
+Se a URL não estiver explícita no resultado, mas você souber que o documento tem uma URL original armazenada, mencione que a URL está disponível nos metadados do documento.
+
 Vector stores disponíveis organizados por categoria:
 
 TABELAS (Compartilhadas):
@@ -75,7 +81,9 @@ Use esta ferramenta PRIMEIRO antes de responder perguntas, especialmente para:
 - Normas técnicas e legislação
 - Documentos fiscais eletrônicos (NF-e, NFC-e, CT-e)
 - Reforma tributária (IBS/CBS/IS)
-- Tabelas e códigos fiscais`,
+- Tabelas e códigos fiscais
+
+Ao apresentar resultados, SEMPRE inclua URLs dos documentos originais quando disponíveis nos metadados.`,
   parameters: z.object({
     vectorStoreId: z
       .string()
@@ -113,6 +121,58 @@ Use esta ferramenta PRIMEIRO antes de responder perguntas, especialmente para:
 });
 
 /**
+ * Valida uma URL usando websearch (tentativa de acesso HTTP)
+ * Retorna status de validação e URL alternativa do site oficial se inválida
+ */
+async function validateUrlWithWebSearch(url: string): Promise<{
+  valid: boolean;
+  accessible: boolean;
+  alternativeUrl?: string;
+  error?: string;
+}> {
+  // Primeiro, validar formato e domínio
+  const domainValidation = validateUrl(url);
+  if (!domainValidation.valid) {
+    // Tentar obter URL alternativa do site oficial
+    const urlInfo = extractDocumentTypeFromUrl(url);
+    const alternativeUrl = getOfficialSiteUrl(urlInfo.type, urlInfo.portalId);
+    
+    return {
+      valid: false,
+      accessible: false,
+      alternativeUrl: alternativeUrl || undefined,
+      error: domainValidation.error,
+    };
+  }
+
+  // Tentar acessar a URL para verificar se está disponível
+  try {
+    await httpFetch(url);
+    return {
+      valid: true,
+      accessible: true,
+    };
+  } catch (error) {
+    // URL não está acessível, mas é de domínio permitido
+    // Retornar URL alternativa do site oficial
+    const urlInfo = extractDocumentTypeFromUrl(url);
+    const alternativeUrl = getOfficialSiteUrl(urlInfo.type, urlInfo.portalId);
+    
+    logger.warn(
+      { url, error: error instanceof Error ? error.message : String(error) },
+      "[validateUrlWithWebSearch] URL não acessível"
+    );
+    
+    return {
+      valid: true, // Domínio é válido
+      accessible: false,
+      alternativeUrl: alternativeUrl || undefined,
+      error: `URL não está acessível: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
+}
+
+/**
  * Tool: web
  * Consulta sites oficiais (domínios permitidos conforme config/document-sources.json)
  */
@@ -120,20 +180,21 @@ export const webTool = tool({
   name: "web",
   description: `Consulta sites oficiais para obter dados objetivos (datas, números de lei, URLs oficiais).
   
+IMPORTANTE: Esta ferramenta valida URLs usando websearch antes de retornar ao usuário.
+Se uma URL não estiver acessível, uma URL alternativa do site oficial será fornecida.
+
 Domínios permitidos (conforme config/document-sources.json):
 - *.gov.br (todos os domínios do governo brasileiro)
 - *.fazenda.gov.br (Ministério da Fazenda)
 - *.fazenda.sp.gov.br (SEFAZ-SP)
 - *.fazenda.mg.gov.br (SEFAZ-MG)
 - dfe-portal.svrs.rs.gov.br (SVRS - SEFAZ Virtual Rio Grande do Sul, autorizador compartilhado)
-- encat.org.br (ENCAT - Entidade Nacional de Coordenação e Acompanhamento da NFC-e)
 - confaz.fazenda.gov.br (CONFAZ - Conselho Nacional de Política Fazendária)
 
 Portais principais:
-- Portal Nacional NF-e: www.nfe.fazenda.gov.br
-- SVRS NF-e/NFC-e/CT-e/MDF-e: dfe-portal.svrs.rs.gov.br
-- CONFAZ: www.confaz.fazenda.gov.br
-- ENCAT: www.encat.org.br
+- Portal Nacional NF-e: https://www.nfe.fazenda.gov.br/portal
+- SVRS NF-e/NFC-e/CT-e/MDF-e: https://dfe-portal.svrs.rs.gov.br
+- CONFAZ: https://www.confaz.fazenda.gov.br
 
 Use APENAS para:
 - Verificar datas de publicação
@@ -156,32 +217,61 @@ NUNCA use para conteúdo interpretativo ou de blogs/consultorias privadas.`,
       .describe("Query específica ou termo a buscar na página (opcional)"),
   }),
   async execute({ url, query }) {
-    // Validar formato de URL primeiro
-    try {
-      new URL(url);
-    } catch {
-      return `Erro: URL inválida: "${url}". Forneça uma URL válida começando com http:// ou https://`;
-    }
-
-    // Validar domínio usando configuração centralizada
-    const validation = validateUrl(url);
+    // Validar e verificar acessibilidade da URL
+    const validation = await validateUrlWithWebSearch(url);
+    
     if (!validation.valid) {
       logger.warn({ url, error: validation.error }, "[web] URL não permitida");
+      
+      if (validation.alternativeUrl) {
+        return `${validation.error}\n\nRecomendação: Acesse o site oficial diretamente: ${validation.alternativeUrl}`;
+      }
+      
       return validation.error || `URL '${url}' não é um domínio oficial permitido.`;
+    }
+    
+    if (!validation.accessible) {
+      logger.warn({ url, error: validation.error }, "[web] URL não acessível");
+      
+      if (validation.alternativeUrl) {
+        return `A URL '${url}' não está acessível no momento.\n\nRecomendação: Acesse o site oficial diretamente: ${validation.alternativeUrl}`;
+      }
+      
+      return `A URL '${url}' não está acessível: ${validation.error || "Erro desconhecido"}`;
     }
 
     logger.info({ url, query }, "[web] Consultando site oficial");
 
     try {
-      // TODO: Implementar chamada real ao http-fetch quando disponível
-      // Por enquanto, retorna placeholder
-      return `Consulta ao site oficial '${url}'${query ? ` com query: "${query}"` : ""}. 
+      // Fazer requisição real à URL
+      const content = await httpFetch(url);
       
-Nota: Implementação completa do web tool requer integração com http-fetch MCP tool.
-Por enquanto, use file-search como fonte primária de informação.`;
+      // Se houver query, tentar buscar no conteúdo (implementação básica)
+      if (query) {
+        const lowerContent = content.toLowerCase();
+        const lowerQuery = query.toLowerCase();
+        if (lowerContent.includes(lowerQuery)) {
+          return `Informação encontrada no site oficial '${url}' para a query "${query}".\n\nConteúdo relevante encontrado na página.`;
+        } else {
+          return `Consulta ao site oficial '${url}' com query: "${query}".\n\nA query não foi encontrada no conteúdo da página. Verifique a URL ou tente termos diferentes.`;
+        }
+      }
+      
+      return `Consulta ao site oficial '${url}' realizada com sucesso.\n\nConteúdo da página obtido. Use file-search para informações mais detalhadas dos documentos armazenados.`;
     } catch (error) {
-      logger.error({ error, url, query }, "[web] Erro");
-      return `Erro ao consultar '${url}': ${error instanceof Error ? error.message : String(error)}`;
+      logger.error({ error, url, query }, "[web] Erro ao consultar");
+      
+      // Tentar fornecer URL alternativa
+      const urlInfo = extractDocumentTypeFromUrl(url);
+      const alternativeUrl = getOfficialSiteUrl(urlInfo.type, urlInfo.portalId);
+      
+      let errorMessage = `Erro ao consultar '${url}': ${error instanceof Error ? error.message : String(error)}`;
+      
+      if (alternativeUrl) {
+        errorMessage += `\n\nRecomendação: Acesse o site oficial diretamente: ${alternativeUrl}`;
+      }
+      
+      return errorMessage;
     }
   },
 });
@@ -216,6 +306,78 @@ Use para:
   async execute({ level, message, metadata }) {
     logger[level]({ metadata }, `[agent-logger] ${message}`);
     return `Log registrado: ${message}`;
+  },
+});
+
+/**
+ * Tool: schema-lookup
+ * Busca exata de schemas XSD por nome antes de usar busca semântica
+ */
+export const schemaLookupTool = tool({
+  name: "schema_lookup",
+  description: `Busca EXATA de schemas XSD por nome usando índice local.
+  
+Use esta ferramenta ANTES de file-search quando o usuário mencionar:
+- Nomes específicos de schemas (ex: "consReciNFe_v4.00.xsd", "procNFe_v4.00.xsd")
+- Estruturas XML específicas (ex: "consulta de recibo", "retorno de consulta")
+- Elementos de schema (ex: "elemento consReciNFe", "campo nRec")
+
+Esta tool faz busca exata por nome, muito mais rápida e precisa que busca semântica.
+Se encontrar o schema, use as informações retornadas diretamente.
+Se não encontrar, então use file-search para busca semântica.
+
+Domínios disponíveis: nfe, nfce, confaz, mdfe, other`,
+  parameters: z.object({
+    schemaName: z
+      .string()
+      .describe(
+        "Nome do schema a buscar (ex: 'consReciNFe_v4.00', 'procNFe_v4.00', 'cancNFe_v2.00'). Pode ser nome completo ou parcial."
+      ),
+    domain: z
+      .enum(["nfe", "nfce", "confaz", "mdfe", "other"])
+      .nullable()
+      .optional()
+      .describe("Domínio específico para limitar busca (opcional)"),
+  }),
+  async execute({ schemaName, domain }) {
+    logger.info({ schemaName, domain }, "[schema-lookup] Buscando schema");
+
+    try {
+      const results = await lookupSchema(schemaName, domain || undefined);
+
+      if (results.length === 0) {
+        return `Nenhum schema encontrado com o nome "${schemaName}"${domain ? ` no domínio ${domain}` : ""}. Tente usar file-search para busca semântica.`;
+      }
+
+      // Formatar resultados
+      const formatted = results.map((entry, index) => {
+        let info = `${index + 1}. **${entry.schemaName}**\n`;
+        info += `   - Arquivo: ${entry.fileName} (upload: ${entry.uploadFileName})\n`;
+        info += `   - Caminho: ${entry.filePath}\n`;
+        info += `   - Domínio: ${entry.domain}\n`;
+        if (entry.namespace) {
+          info += `   - Namespace: ${entry.namespace}\n`;
+        }
+        if (entry.version) {
+          info += `   - Versão: ${entry.version}\n`;
+        }
+        if (entry.elementCount !== undefined) {
+          info += `   - Elementos: ${entry.elementCount}\n`;
+        }
+        if (entry.rootElements && entry.rootElements.length > 0) {
+          info += `   - Elementos raiz: ${entry.rootElements.join(", ")}\n`;
+        }
+        if (entry.keyElements && entry.keyElements.length > 0) {
+          info += `   - Elementos importantes: ${entry.keyElements.join(", ")}\n`;
+        }
+        return info;
+      }).join("\n\n");
+
+      return `Encontrados ${results.length} schema(s) com o nome "${schemaName}":\n\n${formatted}\n\nUse file-search no vector store 'esquemas-xml-${results[0].domain}' para obter o conteúdo completo do schema.`;
+    } catch (error) {
+      logger.error({ error, schemaName, domain }, "[schema-lookup] Erro");
+      return `Erro ao buscar schema "${schemaName}": ${error instanceof Error ? error.message : String(error)}`;
+    }
   },
 });
 
@@ -255,8 +417,8 @@ Retorna uma lista com id e description de cada vector store.`,
 /**
  * Lista de todas as tools disponíveis
  */
-export const coordinatorTools = [fileSearchTool, webTool, loggerTool];
+export const coordinatorTools = [schemaLookupTool, fileSearchTool, webTool, loggerTool];
 
-export const specialistTools = [fileSearchTool, loggerTool];
+export const specialistTools = [schemaLookupTool, fileSearchTool, loggerTool];
 
 export const classifierTools = [vectorStoresMetadataTool, loggerTool];
