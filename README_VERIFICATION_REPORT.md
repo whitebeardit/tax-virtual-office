@@ -266,3 +266,4 @@ O README está **majoritariamente correto** e alinhado com a implementação. Os
 3. **Informações úteis faltantes** - Variáveis de ambiente, testes e documentação Swagger
 
 Recomenda-se aplicar as correções de alta prioridade antes de considerar o README completo e preciso.
+

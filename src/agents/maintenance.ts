@@ -747,3 +747,4 @@ function scoreVectorStores(document: PortalDocument) {
     rationaleFromHeuristics: finalRationale,
   };
 }
+

@@ -363,3 +363,4 @@ A documentação em `docs/VECTOR_STORES.md`, `docs/WORKFLOWS.md`, `docs/TESTING.
 1. Validar modelos de AI com a API da OpenAI
 2. Atualizar `docs/AGENTS.md` conforme recomendações acima
 3. Revisar e atualizar exemplos de código se necessário
+

@@ -358,3 +358,5 @@ Após testes manuais bem-sucedidos:
 2. **Criar testes de integração** para fluxo completo
 3. **Configurar CI/CD** para executar testes automaticamente
 4. **Monitorar métricas** de classificação (accuracy, confidence scores)
+
+

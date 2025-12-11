@@ -69,6 +69,37 @@ Configure as seguintes variáveis no arquivo `.env`:
 - `OPENAI_API_KEY` (obrigatória): Chave da API OpenAI para os agentes.
 - `APP_MODE` (opcional): Modo de execução - `api` ou `daily-portals-scan`. Padrão: `api`.
 - `PORT` (opcional): Porta do servidor HTTP. Padrão: `3000`.
+- `TAX_AGENT_HUB_PATH` (opcional): Caminho para o diretório do `tax-agent-hub`.
+
+### TAX_AGENT_HUB_PATH
+
+Esta variável é usada para acessar recursos do `tax-agent-hub`, incluindo:
+- Índice de schemas XSD: `{TAX_AGENT_HUB_PATH}/upload/{domain}/schema-index.json`
+- Status de upload: `{TAX_AGENT_HUB_PATH}/upload/{domain}/upload-status.json`
+
+**Quando configurar:**
+
+- **Mesma máquina**: Opcional. Se não configurado, usa caminho relativo `../tax-agent-hub` como fallback.
+  ```bash
+  TAX_AGENT_HUB_PATH=/caminho/absoluto/para/tax-agent-hub
+  ```
+
+- **Máquinas diferentes**: **OBRIGATÓRIO**. Configure com caminho absoluto ou caminho de rede compartilhado.
+  ```bash
+  # Exemplo: NFS ou mount compartilhado
+  TAX_AGENT_HUB_PATH=/mnt/shared/tax-agent-hub
+  
+  # Exemplo: Caminho absoluto em servidor remoto
+  TAX_AGENT_HUB_PATH=/home/user/tax-agent-hub
+  ```
+
+**Nota**: O `tax-agent-hub` deve gerar o índice de schemas executando:
+```bash
+cd tax-agent-hub
+npm run generate:schema-index
+```
+
+Isso cria os arquivos `schema-index.json` em `upload/{domain}/` que são necessários para a tool `schema-lookup`.
 
 Veja `.env.example` para um template completo.
 

@@ -254,3 +254,5 @@ main().catch((err) => {
   logger.error({ error: err }, "Erro fatal no teste");
   process.exit(1);
 });
+
+

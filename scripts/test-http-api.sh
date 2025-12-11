@@ -112,3 +112,5 @@ test_query \
   "Preciso entender a base de cálculo"
 
 echo -e "${GREEN}✅ Todos os testes concluídos${NC}"
+
+
