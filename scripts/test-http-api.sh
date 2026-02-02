@@ -114,3 +114,11 @@ test_query \
 echo -e "${GREEN}✅ Todos os testes concluídos${NC}"
 
 
+
+
+
+
+
+
+
+

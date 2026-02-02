@@ -75,3 +75,11 @@ curl -X POST http://localhost:3000/query \
 - Todas as queries devem acionar o `file-search` tool automaticamente
 - O agente `specialist-nfe` será acionado automaticamente devido às palavras-chave "NF-e", "cancelamento", "schema", etc.
 
+
+
+
+
+
+
+
+
