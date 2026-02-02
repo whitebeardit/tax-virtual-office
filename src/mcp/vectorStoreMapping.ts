@@ -1,7 +1,8 @@
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { logger } from '../utils/logger.js';
-import { env } from '../config/env.js';
+import * as fs from "fs/promises";
+import * as path from "path";
+import { logger } from "../utils/logger.js";
+import { env } from "../config/env.js";
+import { fetchUploadStatusMappings } from "../infrastructure/tax-agent-hub-client.js";
 
 interface UploadStatusFile {
   collection?: string;
@@ -76,24 +77,48 @@ async function loadUploadStatus(domain: string, basePath: string): Promise<Uploa
 }
 
 /**
- * Carrega todos os mapeamentos disponíveis dos upload-status.json
+ * Carrega todos os mapeamentos disponíveis
+ *
+ * Se TAX_AGENT_HUB_URL configurado: busca via API.
+ * Caso contrário: lê arquivos upload-status.json locais.
  */
 async function loadAllMappings(): Promise<Map<string, string>> {
+  // Prioridade: API quando TAX_AGENT_HUB_URL configurado
+  const apiUrl = env.taxAgentHubUrl;
+  if (apiUrl) {
+    const entries = await fetchUploadStatusMappings(apiUrl);
+    const mappings = new Map<string, string>();
+    for (const e of entries) {
+      if (e.collection && e.vector_store_id) {
+        mappings.set(e.collection, e.vector_store_id);
+      }
+    }
+    logger.debug(
+      { source: "api", count: mappings.size },
+      "Mapeamentos carregados via API"
+    );
+    return mappings;
+  }
+
+  // Fallback: arquivos locais
   const basePath = getTaxAgentHubPath();
   const domains = await discoverDomains(basePath);
   const mappings = new Map<string, string>();
-  
+
   for (const domain of domains) {
     const status = await loadUploadStatus(domain, basePath);
     if (status?.collection && status?.vector_store_id) {
       mappings.set(status.collection, status.vector_store_id);
       logger.debug(
-        { collection: status.collection, vector_store_id: status.vector_store_id },
-        'Mapeamento carregado'
+        {
+          collection: status.collection,
+          vector_store_id: status.vector_store_id,
+        },
+        "Mapeamento carregado"
       );
     }
   }
-  
+
   return mappings;
 }
 
