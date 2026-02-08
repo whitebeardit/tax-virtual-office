@@ -4,6 +4,21 @@ dotenv.config();
 
 export type AppMode = "api" | "daily-portals-scan";
 
+/**
+ * URI de conexão MongoDB.
+ * Em testes: injetada pelo globalSetup (mongodb-memory-server).
+ * Em produção: lida de MONGODB_URI no .env.
+ */
+export function getMongoDbUri(): string {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error(
+      "MONGODB_URI não configurada. Defina no .env ou use mongodb-memory-server nos testes."
+    );
+  }
+  return uri;
+}
+
 export const env = {
   appMode: (process.env.APP_MODE as AppMode | undefined) || "api",
   port: Number(process.env.PORT || 3000),

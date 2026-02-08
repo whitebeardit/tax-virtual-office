@@ -50,7 +50,7 @@ Um `docker-compose.yaml` está disponível em `infra/docker-compose.yaml` com do
 
 Uso básico:
 
-1. Configure `.env` com `OPENAI_API_KEY` e demais variáveis.
+1. Configure `.env` com `OPENAI_API_KEY`, `MONGODB_URI` (mesmo banco que tax-agent-hub) e demais variáveis.
 2. Suba os contêineres: `docker compose -f infra/docker-compose.yaml up --build`.
 3. A API ficará disponível em `http://localhost:3000` e o watcher rodará em background.
 
@@ -67,6 +67,7 @@ Uso básico:
 Configure as seguintes variáveis no arquivo `.env`:
 
 - `OPENAI_API_KEY` (obrigatória): Chave da API OpenAI para os agentes.
+- `MONGODB_URI` (obrigatória): URI de conexão MongoDB. Usa o mesmo banco que `tax-agent-hub`; collections com prefixo `tvo-` (ex: `tvo-portal-state`). Exemplo: `mongodb://localhost:27017/tax-agent-hub`.
 - `APP_MODE` (opcional): Modo de execução - `api` ou `daily-portals-scan`. Padrão: `api`.
 - `PORT` (opcional): Porta do servidor HTTP. Padrão: `3000`.
 - `TAX_AGENT_HUB_URL` (opcional): URL da API do `tax-agent-hub` (ex: `http://localhost:3001`). Quando configurado, schemaLookupTool e vectorStoreMapping consomem dados via API.
@@ -111,6 +112,7 @@ Veja `.env.example` para um template completo.
 - `npm run test:watch` — executa testes em modo watch.
 - `npm run test:coverage` — gera relatório de cobertura de código.
 - `npm run test:classifier` — testa o classificador de documentos.
+- `npm run migrate:portal-state` — migra `agents/.cache/portal-state.json` para MongoDB (collection `tvo-portal-state`). Execute uma vez ao migrar de arquivo para banco.
 
 ## Endpoints
 
@@ -142,5 +144,5 @@ No Cursor:
 
 - O workflow de consulta (`/query`) agora monta o plano com especialistas e ferramentas com base na pergunta, reaproveitando o catálogo de agentes e exibindo quais modelos serão acionados. 【F:src/workflows/user-query.ts†L1-L78】【F:src/agents/registry.ts†L1-L55】
 - O coordinator passa a instrumentar o plano retornado com fontes reais (file-search/web) e exemplos de traces de agentes, propagando a lista de especialistas, ferramentas e rastros para facilitar auditoria do fluxo de consulta. 【F:src/agents/coordinator.ts†L1-L78】【F:src/workflows/user-query.ts†L1-L90】
-- A varredura de portais (`runDailyPortalsScan` e `/admin/run-daily`) agora faz fetch das listagens, extrai links reais via HTML, deduplica por hash em `agents/.cache/portal-state.json` e registra métricas por portal. Novos itens retornam com `portalId`, `portalType`, `contentHash`, `publishedAt` e `detectedAt`. 【F:src/workflows/daily-portals-scan.ts†L1-L16】【F:src/agents/maintenance.ts†L41-L121】【F:src/agents/maintenance.ts†L171-L221】
+- A varredura de portais (`runDailyPortalsScan` e `/admin/run-daily`) agora faz fetch das listagens, extrai links reais via HTML, deduplica por hash no MongoDB (collection `tvo-portal-state`) e registra métricas por portal. Novos itens retornam com `portalId`, `portalType`, `contentHash`, `publishedAt` e `detectedAt`. 【F:src/workflows/daily-portals-scan.ts†L1-L16】【F:src/agents/maintenance.ts†L41-L121】【F:src/agents/maintenance.ts†L171-L221】
 - A classificação de documentos usa heurísticas e o catálogo `agents/vectorstores.yaml` para pontuar o melhor `vectorStoreId`, retornando rationale e score sem depender de chamadas de modelo. O upload passa a baixar e persistir o HTML na pasta `agents/.cache/downloads` antes de registrar destino e tags. 【F:src/agents/types.ts†L17-L41】【F:src/agents/maintenance.ts†L70-L108】【F:src/agents/maintenance.ts†L123-L170】

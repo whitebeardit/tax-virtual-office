@@ -15,6 +15,10 @@ import { logger } from "../utils/logger.js";
 import { run } from "@openai/agents";
 import { createOpenAIAgent } from "../config/openai-agents.js";
 import { isValidVectorStoreId } from "../mcp/vectorStoresMetadataTool.js";
+import {
+  PortalStateRepository,
+  type PortalState,
+} from "../repositories/portal-state.repository.js";
 
 interface PortalsFile {
   portals: PortalDefinition[];
@@ -31,17 +35,12 @@ const VECTORSTORES_FILE_PATH = path.resolve(
   "vectorstores.yaml"
 );
 const PORTAL_CACHE_DIR = path.resolve(process.cwd(), "agents", ".cache");
-const PORTAL_STATE_FILE = path.resolve(PORTAL_CACHE_DIR, "portal-state.json");
 const DOWNLOAD_CACHE_DIR = path.resolve(PORTAL_CACHE_DIR, "downloads");
 
-interface PortalStateFile {
-  lastRun?: string;
-  seen: Record<string, string[]>;
-}
+const portalStateRepository = new PortalStateRepository();
 
 let cachedPortals: PortalDefinition[] | undefined;
 let cachedVectorStores: VectorStoreDefinition[] | undefined;
-let cachedPortalState: PortalStateFile | undefined;
 
 function loadPortalsCatalog(): PortalDefinition[] {
   if (cachedPortals) return cachedPortals;
@@ -92,7 +91,8 @@ export function clearVectorStoresCache(): void {
 export async function watchPortals(): Promise<PortalDocument[]> {
   const portals = loadPortalsCatalog();
   const discovered: PortalDocument[] = [];
-  const state = loadPortalState();
+  const state =
+    (await portalStateRepository.findState()) ?? { seen: {}, lastRun: undefined };
 
   for (const portal of portals) {
     try {
@@ -118,7 +118,10 @@ export async function watchPortals(): Promise<PortalDocument[]> {
     }
   }
 
-  persistPortalState(state);
+  await portalStateRepository.upsertState({
+    ...state,
+    lastRun: new Date(),
+  });
   return discovered;
 }
 
@@ -409,31 +412,6 @@ function buildTags(document: PortalDocument): string[] {
   return tags;
 }
 
-function loadPortalState(): PortalStateFile {
-  if (cachedPortalState) return cachedPortalState;
-
-  if (!fs.existsSync(PORTAL_CACHE_DIR)) {
-    fs.mkdirSync(PORTAL_CACHE_DIR, { recursive: true });
-  }
-
-  if (!fs.existsSync(PORTAL_STATE_FILE)) {
-    cachedPortalState = { seen: {}, lastRun: undefined };
-    return cachedPortalState;
-  }
-
-  const content = fs.readFileSync(PORTAL_STATE_FILE, "utf-8");
-  cachedPortalState = JSON.parse(content) as PortalStateFile;
-  if (!cachedPortalState.seen) {
-    cachedPortalState.seen = {};
-  }
-  return cachedPortalState;
-}
-
-function persistPortalState(state: PortalStateFile) {
-  const data = { ...state, lastRun: new Date().toISOString() };
-  fs.writeFileSync(PORTAL_STATE_FILE, JSON.stringify(data, null, 2));
-}
-
 function parsePortalListing(
   portal: PortalDefinition,
   html: string,
@@ -578,13 +556,13 @@ function extractMetadataFromTitle(
   return metadata;
 }
 
-function hasSeen(state: PortalStateFile, doc: PortalDocument): boolean {
+function hasSeen(state: PortalState, doc: PortalDocument): boolean {
   const dedupKey = doc.contentHash || doc.url;
   const seen = state.seen[doc.portalId] || [];
   return seen.includes(dedupKey);
 }
 
-function rememberDocument(state: PortalStateFile, doc: PortalDocument) {
+function rememberDocument(state: PortalState, doc: PortalDocument) {
   const dedupKey = doc.contentHash || doc.url;
   if (!state.seen[doc.portalId]) {
     state.seen[doc.portalId] = [];
