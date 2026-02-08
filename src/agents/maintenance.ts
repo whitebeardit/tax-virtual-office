@@ -125,17 +125,42 @@ export async function watchPortals(): Promise<PortalDocument[]> {
   return discovered;
 }
 
+/**
+ * Tenta mapear um vectorStoreId inválido para um válido, preservando o intento do agente.
+ * Ex.: esquemas-xml-nfgas (inexistente) → documentos-nfgas (existente).
+ */
+function tryMapInvalidVectorStoreId(invalidId: string): string | null {
+  const esquemasMatch = invalidId.match(/^esquemas-xml-(.+)$/i);
+  if (esquemasMatch) {
+    const domain = esquemasMatch[1];
+    const documentosId = `documentos-${domain}`;
+    if (isValidVectorStoreId(documentosId)) {
+      return documentosId;
+    }
+  }
+  return null;
+}
+
 export async function classifyDocument(
   document: PortalDocument
 ): Promise<ClassifiedDocument> {
   try {
     // Tentar usar o agente LLM primeiro
     const classification = await invokeClassifierAgent(document);
-    
+
     // Validar que o vectorStoreId retornado existe
-    if (!isValidVectorStoreId(classification.vectorStoreId)) {
+    let vectorStoreId = classification.vectorStoreId;
+    if (!isValidVectorStoreId(vectorStoreId)) {
+      const mapped = tryMapInvalidVectorStoreId(vectorStoreId);
+      if (mapped) {
+        logger.info(
+          { originalId: vectorStoreId, mappedId: mapped, document },
+          "Vector store ID inválido mapeado para ID válido"
+        );
+        return { ...classification, vectorStoreId: mapped };
+      }
       logger.warn(
-        { vectorStoreId: classification.vectorStoreId, document },
+        { vectorStoreId, document },
         "Vector store ID inválido retornado pelo agente, usando fallback"
       );
       return fallbackClassification(document);
@@ -612,6 +637,35 @@ function logPortalMetrics(
   );
 }
 
+/**
+ * Infere domínio a partir da URL (paths SVRS) quando document.domain pode estar incorreto.
+ */
+function inferDomainFromUrl(normalizedUrl: string): string | undefined {
+  const pathToDomain: Array<{ path: string; domain: string }> = [
+    { path: "/nfabi", domain: "nfeab" },
+    { path: "/nf3e", domain: "nf3e" },
+    { path: "/nfcom", domain: "nfcom" },
+    { path: "/nfag", domain: "nfag" },
+    { path: "/nfgas", domain: "nfgas" },
+    { path: "/nff", domain: "nff" },
+    { path: "/bpe", domain: "bpe" },
+    { path: "/dce", domain: "dce" },
+    { path: "/cff", domain: "cff" },
+    { path: "/pes", domain: "pes" },
+    { path: "/one", domain: "one" },
+    { path: "/difal", domain: "difal" },
+    { path: "/mdfe", domain: "mdfe" },
+    { path: "/nfe", domain: "nfe" },
+    { path: "/nfce", domain: "nfce" },
+    { path: "/cte", domain: "cte" },
+    { path: "/confaz", domain: "confaz" },
+  ];
+  for (const { path, domain } of pathToDomain) {
+    if (normalizedUrl.includes(path)) return domain;
+  }
+  return undefined;
+}
+
 function scoreVectorStores(document: PortalDocument) {
   const catalog = loadVectorStoresCatalog();
   const normalizedTitle = document.title.toLowerCase();
@@ -619,12 +673,46 @@ function scoreVectorStores(document: PortalDocument) {
   const portalType = document.portalType?.toLowerCase() || "";
   const rationale: string[] = [];
 
+  // Domínio efetivo: prioriza URL (evita erro de seleção manual) e depois document.domain
+  const effectiveDomain = inferDomainFromUrl(normalizedUrl) ?? document.domain;
+
+  const DFE_DOMAINS_WITH_SCHEMAS = [
+    "nfe", "nfce", "cte", "mdfe", "nfgas", "nfag", "bpe", "dce", "nf3e", "nfcom",
+    "nfeab", "one", "cff", "difal", "pes", "nff",
+  ];
+
   const scores = catalog.map((store) => {
     let score = 0;
     const storeId = store.id.toLowerCase();
     const storeDescription = store.description.toLowerCase();
 
     // Heurísticas baseadas em padrões genéricos (sem IDs hardcoded)
+
+    // 0. Natureza ESQUEMA_XML + domínio DFe → preferir esquemas-xml-{domain}
+    if (document.natureza === "ESQUEMA_XML" && effectiveDomain && DFE_DOMAINS_WITH_SCHEMAS.includes(effectiveDomain)) {
+      if (storeId === `esquemas-xml-${effectiveDomain}`) {
+        score += 5;
+        rationale.push(`Natureza ESQUEMA_XML e domain ${effectiveDomain} → esquemas-xml-${effectiveDomain}.`);
+      } else if (storeId === `documentos-${effectiveDomain}`) {
+        score += 3;
+        rationale.push(`Natureza ESQUEMA_XML e domain ${effectiveDomain} → fallback documentos-${effectiveDomain}.`);
+      }
+    }
+
+    // 0b. NFGas no título (PL_NFGas, etc.) ou URL → esquemas-xml-nfgas ou documentos-nfgas
+    if (
+      normalizedTitle.includes("nfgas") ||
+      normalizedTitle.includes("nf gas") ||
+      normalizedUrl.includes("/nfgas")
+    ) {
+      if (storeId.includes("esquemas-xml-nfgas")) {
+        score += 4;
+        rationale.push("Título/URL menciona NFGas e store é de esquemas NFGas.");
+      } else if (storeId.includes("documentos-nfgas")) {
+        score += 4;
+        rationale.push("Título/URL menciona NFGas e store é de documentos NFGas.");
+      }
+    }
 
     // 1. Match por tipo de documento no ID do store
     if (normalizedTitle.includes("nf-e") || normalizedTitle.includes("nfe") || normalizedUrl.includes("/nfe")) {
@@ -648,31 +736,31 @@ function scoreVectorStores(document: PortalDocument) {
       }
     }
 
-    // Match por domínios SVRS (documentos-bpe, documentos-nf3e, etc.)
-    const domainStoreMap: Array<{ path: string; storePrefix: string }> = [
-      { path: "/bpe", storePrefix: "documentos-bpe" },
-      { path: "/nf3e", storePrefix: "documentos-nf3e" },
-      { path: "/dce", storePrefix: "documentos-dce" },
-      { path: "/nfgas", storePrefix: "documentos-nfgas" },
-      { path: "/cff", storePrefix: "documentos-cff" },
-      { path: "/nff", storePrefix: "documentos-nff" },
-      { path: "/nfag", storePrefix: "documentos-nfag" },
-      { path: "/pes", storePrefix: "documentos-pes" },
-      { path: "/nfcom", storePrefix: "documentos-nfcom" },
-      { path: "/one", storePrefix: "documentos-one" },
-      { path: "/nfabi", storePrefix: "documentos-nfeab" },
-      { path: "/difal", storePrefix: "documentos-difal" },
+    // Match por domínios SVRS (documentos-* e esquemas-xml-*)
+    const domainStoreMap: Array<{ path: string; storePrefix: string; schemaPrefix?: string }> = [
+      { path: "/bpe", storePrefix: "documentos-bpe", schemaPrefix: "esquemas-xml-bpe" },
+      { path: "/nf3e", storePrefix: "documentos-nf3e", schemaPrefix: "esquemas-xml-nf3e" },
+      { path: "/dce", storePrefix: "documentos-dce", schemaPrefix: "esquemas-xml-dce" },
+      { path: "/nfgas", storePrefix: "documentos-nfgas", schemaPrefix: "esquemas-xml-nfgas" },
+      { path: "/cff", storePrefix: "documentos-cff", schemaPrefix: "esquemas-xml-cff" },
+      { path: "/nff", storePrefix: "documentos-nff", schemaPrefix: "esquemas-xml-nff" },
+      { path: "/nfag", storePrefix: "documentos-nfag", schemaPrefix: "esquemas-xml-nfag" },
+      { path: "/pes", storePrefix: "documentos-pes", schemaPrefix: "esquemas-xml-pes" },
+      { path: "/nfcom", storePrefix: "documentos-nfcom", schemaPrefix: "esquemas-xml-nfcom" },
+      { path: "/one", storePrefix: "documentos-one", schemaPrefix: "esquemas-xml-one" },
+      { path: "/nfabi", storePrefix: "documentos-nfeab", schemaPrefix: "esquemas-xml-nfeab" },
+      { path: "/difal", storePrefix: "documentos-difal", schemaPrefix: "esquemas-xml-difal" },
     ];
-    for (const { path, storePrefix } of domainStoreMap) {
-      if (normalizedUrl.includes(path) && storeId.includes(storePrefix)) {
+    for (const { path, storePrefix, schemaPrefix } of domainStoreMap) {
+      if (normalizedUrl.includes(path) && (storeId.includes(storePrefix) || (schemaPrefix && storeId.includes(schemaPrefix)))) {
         score += 5;
-        rationale.push(`URL do portal SVRS ${path} e store ${storePrefix}.`);
+        rationale.push(`URL do portal SVRS ${path} e store ${storePrefix}/${schemaPrefix ?? ""}.`);
         break;
       }
     }
 
-    // Match por document.domain quando disponível
-    if (document.domain) {
+    // Match por effectiveDomain (URL ou document.domain) quando disponível
+    if (effectiveDomain) {
       const domainToStore: Record<string, string> = {
         bpe: "documentos-bpe",
         nf3e: "documentos-nf3e",
@@ -687,10 +775,10 @@ function scoreVectorStores(document: PortalDocument) {
         nfeab: "documentos-nfeab",
         difal: "documentos-difal",
       };
-      const expectedStore = domainToStore[document.domain];
-      if (expectedStore && storeId.includes(expectedStore)) {
+      const expectedStore = domainToStore[effectiveDomain];
+      if (expectedStore && (storeId.includes(expectedStore) || storeId.includes(`esquemas-xml-${effectiveDomain}`))) {
         score += 5;
-        rationale.push(`Domain ${document.domain} mapeia para ${expectedStore}.`);
+        rationale.push(`Domain ${effectiveDomain} mapeia para ${expectedStore} ou esquemas-xml-${effectiveDomain}.`);
       }
     }
 
@@ -723,10 +811,16 @@ function scoreVectorStores(document: PortalDocument) {
       }
     }
 
-    if (normalizedTitle.includes("schema") || normalizedTitle.includes("xsd") || normalizedUrl.includes("/schema/") || normalizedUrl.includes(".xsd")) {
+    if (
+      document.natureza === "ESQUEMA_XML" ||
+      normalizedTitle.includes("schema") ||
+      normalizedTitle.includes("xsd") ||
+      normalizedUrl.includes("/schema/") ||
+      normalizedUrl.includes(".xsd")
+    ) {
       if (storeId.includes("esquema") || storeId.includes("xml")) {
         score += 4;
-        rationale.push("Documento é Schema XML e store é de esquemas XML.");
+        rationale.push("Documento é Schema XML (natureza ou título/URL) e store é de esquemas XML.");
       }
     }
 
