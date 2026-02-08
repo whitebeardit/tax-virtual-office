@@ -326,7 +326,7 @@ Esta tool faz busca exata por nome, muito mais rápida e precisa que busca semâ
 Se encontrar o schema, use as informações retornadas diretamente.
 Se não encontrar, então use file-search para busca semântica.
 
-Domínios disponíveis: nfe, nfce, confaz, mdfe, other`,
+Domínios disponíveis: nfe, nfce, confaz, mdfe, cte, bpe, nf3e, dce, nfgas, nff, nfag, nfcom, one, nfeab, pes, difal, other`,
   parameters: z.object({
     schemaName: z
       .string()
@@ -334,7 +334,7 @@ Domínios disponíveis: nfe, nfce, confaz, mdfe, other`,
         "Nome do schema a buscar (ex: 'consReciNFe_v4.00', 'procNFe_v4.00', 'cancNFe_v2.00'). Pode ser nome completo ou parcial."
       ),
     domain: z
-      .enum(["nfe", "nfce", "confaz", "mdfe", "other"])
+      .enum(["nfe", "nfce", "confaz", "mdfe", "cte", "bpe", "nf3e", "dce", "nfgas", "nff", "nfag", "nfcom", "one", "nfeab", "pes", "difal", "other"])
       .nullable()
       .optional()
       .describe("Domínio específico para limitar busca (opcional)"),

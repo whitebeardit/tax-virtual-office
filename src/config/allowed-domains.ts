@@ -173,13 +173,25 @@ export function getOfficialSiteUrl(documentType?: string, portalId?: string): st
     }
   }
   
-  // Mapear tipo de documento para portal
+  // Mapear tipo de documento para portal (preferir SVRS quando disponível)
   const documentTypeMap: Record<string, string> = {
-    nfe: "nfe",
+    nfe: "nfe-svrs",
     nfce: "nfce-svrs",
-    cte: "mdfe-svrs", // CT-e usa o mesmo portal que MDF-e no SVRS
+    cte: "cte-svrs",
     mdfe: "mdfe-svrs",
     confaz: "confaz",
+    bpe: "bpe-svrs",
+    nf3e: "nf3e-svrs",
+    dce: "dce-svrs",
+    nfgas: "nfgas-svrs",
+    cff: "cff-svrs",
+    nff: "nff-svrs",
+    nfag: "nfag-svrs",
+    pes: "pes-svrs",
+    nfcom: "nfcom-svrs",
+    one: "one-svrs",
+    nfeab: "nfeab-svrs",
+    difal: "difal-svrs",
   };
   
   if (documentType) {
@@ -193,9 +205,9 @@ export function getOfficialSiteUrl(documentType?: string, portalId?: string): st
     }
   }
   
-  // Fallback: retornar portal NF-e como padrão
+  // Fallback: retornar portal SVRS NF-e como padrão (preferir SVRS)
   if (config.portals) {
-    const defaultPortal = config.portals.list.find((p) => p.id === "nfe");
+    const defaultPortal = config.portals.list.find((p) => p.id === "nfe-svrs");
     if (defaultPortal) {
       return defaultPortal.urlBase;
     }
@@ -221,7 +233,10 @@ export function extractDocumentTypeFromUrl(url: string): { type?: string; portal
       return { type: "confaz", portalId: "confaz" };
     }
     if (hostname.includes("svrs.rs.gov.br")) {
-      // Detectar tipo pelo path
+      // Detectar tipo pelo path (ordem: mais específicos primeiro)
+      if (pathname.includes("/nfabi/")) {
+        return { type: "nfeab", portalId: "nfeab-svrs" };
+      }
       if (pathname.includes("/nfe/")) {
         return { type: "nfe", portalId: "nfe-svrs" };
       }
@@ -229,25 +244,94 @@ export function extractDocumentTypeFromUrl(url: string): { type?: string; portal
         return { type: "nfce", portalId: "nfce-svrs" };
       }
       if (pathname.includes("/cte/")) {
-        return { type: "cte", portalId: "mdfe-svrs" };
+        return { type: "cte", portalId: "cte-svrs" };
       }
       if (pathname.includes("/mdfe/")) {
         return { type: "mdfe", portalId: "mdfe-svrs" };
       }
+      if (pathname.includes("/bpe/")) {
+        return { type: "bpe", portalId: "bpe-svrs" };
+      }
+      if (pathname.includes("/nf3e/")) {
+        return { type: "nf3e", portalId: "nf3e-svrs" };
+      }
+      if (pathname.includes("/dce/")) {
+        return { type: "dce", portalId: "dce-svrs" };
+      }
+      if (pathname.includes("/nfgas/")) {
+        return { type: "nfgas", portalId: "nfgas-svrs" };
+      }
+      if (pathname.includes("/cff/")) {
+        return { type: "cff", portalId: "cff-svrs" };
+      }
+      if (pathname.includes("/nff/")) {
+        return { type: "nff", portalId: "nff-svrs" };
+      }
+      if (pathname.includes("/nfag/")) {
+        return { type: "nfag", portalId: "nfag-svrs" };
+      }
+      if (pathname.includes("/pes/")) {
+        return { type: "pes", portalId: "pes-svrs" };
+      }
+      if (pathname.includes("/nfcom/")) {
+        return { type: "nfcom", portalId: "nfcom-svrs" };
+      }
+      if (pathname.includes("/one/")) {
+        return { type: "one", portalId: "one-svrs" };
+      }
+      if (pathname.includes("/difal/")) {
+        return { type: "difal", portalId: "difal-svrs" };
+      }
     }
     
-    // Tentar detectar pelo path
-    if (pathname.includes("/nfe") || pathname.includes("nfe")) {
-      return { type: "nfe" };
+    // Tentar detectar pelo path (ordem: mais específicos primeiro para evitar falsos positivos)
+    if (pathname.includes("/nfabi") || pathname.includes("nfabi")) {
+      return { type: "nfeab", portalId: "nfeab-svrs" };
     }
     if (pathname.includes("/nfce") || pathname.includes("nfce")) {
       return { type: "nfce" };
+    }
+    if (pathname.includes("/nf3e") || pathname.includes("nf3e")) {
+      return { type: "nf3e", portalId: "nf3e-svrs" };
+    }
+    if (pathname.includes("/nfcom") || pathname.includes("nfcom")) {
+      return { type: "nfcom", portalId: "nfcom-svrs" };
+    }
+    if (pathname.includes("/nfag") || pathname.includes("nfag")) {
+      return { type: "nfag", portalId: "nfag-svrs" };
+    }
+    if (pathname.includes("/nfgas") || pathname.includes("nfgas")) {
+      return { type: "nfgas", portalId: "nfgas-svrs" };
+    }
+    if (pathname.includes("/nff") || pathname.includes("nff")) {
+      return { type: "nff", portalId: "nff-svrs" };
+    }
+    if (pathname.includes("/nfe") || pathname.includes("nfe")) {
+      return { type: "nfe" };
     }
     if (pathname.includes("/cte") || pathname.includes("cte")) {
       return { type: "cte" };
     }
     if (pathname.includes("/mdfe") || pathname.includes("mdfe")) {
       return { type: "mdfe" };
+    }
+    if (pathname.includes("/bpe") || pathname.includes("bpe")) {
+      return { type: "bpe", portalId: "bpe-svrs" };
+    }
+    if (pathname.includes("/dce") || pathname.includes("dce")) {
+      return { type: "dce", portalId: "dce-svrs" };
+    }
+    if (pathname.includes("/cff") || pathname.includes("cff")) {
+      return { type: "cff", portalId: "cff-svrs" };
+    }
+    if (pathname.includes("/pes") || pathname.includes("pes")) {
+      return { type: "pes", portalId: "pes-svrs" };
+    }
+    if (pathname.includes("/one") || pathname.includes("one")) {
+      return { type: "one", portalId: "one-svrs" };
+    }
+    if (pathname.includes("/difal") || pathname.includes("difal")) {
+      return { type: "difal", portalId: "difal-svrs" };
     }
     if (pathname.includes("/confaz") || pathname.includes("confaz")) {
       return { type: "confaz", portalId: "confaz" };

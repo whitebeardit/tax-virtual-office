@@ -72,7 +72,7 @@ Você **deve** retornar apenas o JSON a seguir:
 
 ### Prioridade: Metadados do Crawler
 Quando disponíveis, use os metadados do crawler para classificação precisa:
-- `domain` ('nfe', 'nfce', 'cte', 'confaz'): Indica o documento fiscal principal
+- `domain` ('nfe', 'nfce', 'cte', 'mdfe', 'confaz', 'bpe', 'nf3e', 'dce', 'nfgas', 'cff', 'nff', 'nfag', 'nfcom', 'one', 'nfeab', 'pes', 'difal'): Indica o documento fiscal principal
 - `natureza` ('NOTA_TECNICA', 'MANUAL', 'TABELA', 'INFORME_TECNICO', 'SCHEMA_XML', 'AJUSTE_SINIEF', 'CONVENIO', 'LEI', 'DECRETO'): Tipo de documento
 - `assuntos` (array): Temas abordados (ex: ['REFORMA_TRIBUTARIA', 'IBS', 'CBS'])
 - `fileName`: Nome do arquivo pode indicar tipo de tabela (ex: "CFOP", "NCM")
@@ -83,13 +83,15 @@ Quando disponíveis, use os metadados do crawler para classificação precisa:
 **NOTA_TECNICA:**
 - Se `domain === 'nfe'` → `normas-tecnicas-nfe`
 - Se `domain === 'nfce'` → `normas-tecnicas-nfce`
-- Se `domain === 'cte'` → `normas-tecnicas-cte`
+- Se `domain === 'cte'` ou `domain === 'mdfe'` → `normas-tecnicas-cte`
+- Se `domain` for um dos novos DFe (bpe, nf3e, dce, nfgas, cff, nff, nfag, nfcom, one, nfeab, pes, difal) → `documentos-{domain}`
 - Se ausente → `normas-tecnicas-nfe` (fallback)
 
 **MANUAL:**
 - Se `domain === 'nfe'` → `manuais-nfe`
 - Se `domain === 'nfce'` → `manuais-nfce`
-- Se `domain === 'cte'` → `manuais-cte`
+- Se `domain === 'cte'` ou `domain === 'mdfe'` → `manuais-cte`
+- Se `domain` for um dos novos DFe (bpe, nf3e, dce, nfgas, cff, nff, nfag, nfcom, one, nfeab, pes, difal) → `documentos-{domain}`
 
 **TABELA:**
 - Se `fileName` contém "CFOP" → `tabelas-cfop`
@@ -104,16 +106,19 @@ Quando disponíveis, use os metadados do crawler para classificação precisa:
 **INFORME_TECNICO:**
 - Se `domain === 'nfe'` → `informes-tecnicos-nfe`
 - Se `domain === 'nfce'` → `informes-tecnicos-nfce`
-- Se `domain === 'cte'` → `informes-tecnicos-cte`
+- Se `domain === 'cte'` ou `domain === 'mdfe'` → `informes-tecnicos-cte`
+- Se `domain` for um dos novos DFe (bpe, nf3e, dce, nfgas, cff, nff, nfag, nfcom, one, nfeab, pes, difal) → `documentos-{domain}`
 
 **SCHEMA_XML:**
 - Se `domain === 'nfe'` → `esquemas-xml-nfe`
 - Se `domain === 'nfce'` → `esquemas-xml-nfce`
-- Se `domain === 'cte'` → `esquemas-xml-cte`
+- Se `domain === 'cte'` ou `domain === 'mdfe'` → `esquemas-xml-cte`
+- Se `domain` for um dos novos DFe (bpe, nf3e, dce, nfgas, cff, nff, nfag, nfcom, one, nfeab, pes, difal) → `documentos-{domain}`
 
 **AJUSTE_SINIEF:**
 - Se `domain === 'nfe'` → `ajustes-sinief-nfe`
 - Se `domain === 'nfce'` → `ajustes-sinief-nfce`
+- Se `domain` for um dos novos DFe (bpe, nf3e, dce, nfgas, cff, nff, nfag, nfcom, one, nfeab, pes, difal) → `documentos-{domain}`
 - Caso contrário → `ajustes-sinief-geral`
 
 **CONVENIO:**
@@ -140,7 +145,9 @@ Quando disponíveis, use os metadados do crawler para classificação precisa:
 - títulos com "schema", "XSD", "XML":
   - Se menciona "NF-e" → `esquemas-xml-nfe`
   - Se menciona "NFC-e" → `esquemas-xml-nfce`
-  - Se menciona "CT-e" → `esquemas-xml-cte`
+  - Se menciona "CT-e" ou "MDF-e" → `esquemas-xml-cte`
+- documentos de domínios novos (BPe, NF3e, DCe, NFGas, CFF, NFF, NFAg, NFCom, ONE, NFeAB, PES, DIFAL):
+  - Usar `documentos-{domain}` (ex.: BPe → `documentos-bpe`, CFF → `documentos-cff`, NFCom → `documentos-nfcom`)
 - títulos com "Lei Complementar", "LC", "Decreto", "Regulamento" de âmbito nacional:
   - Se menciona "IBS", "CBS", "IS" ou "reforma tributária" → `legislacao-nacional-ibs-cbs-is`
 - títulos/portais de CONFAZ, Ajustes SINIEF:

@@ -495,8 +495,34 @@ function extractMetadataFromTitle(
   const normalizedUrl = url.toLowerCase();
   const metadata: Partial<PortalDocument> = {};
 
-  // Detectar domínio (nfe, nfce, cte, confaz)
-  if (normalizedTitle.includes("nf-e") || normalizedTitle.includes("nfe") || normalizedUrl.includes("/nfe")) {
+  // Detectar domínio (URL tem prioridade para paths SVRS; ordem: mais específicos primeiro)
+  if (normalizedUrl.includes("/nfabi")) {
+    metadata.domain = "nfeab";
+  } else if (normalizedUrl.includes("/nf3e")) {
+    metadata.domain = "nf3e";
+  } else if (normalizedUrl.includes("/nfcom")) {
+    metadata.domain = "nfcom";
+  } else if (normalizedUrl.includes("/nfag")) {
+    metadata.domain = "nfag";
+  } else if (normalizedUrl.includes("/nfgas")) {
+    metadata.domain = "nfgas";
+  } else if (normalizedUrl.includes("/nff")) {
+    metadata.domain = "nff";
+  } else if (normalizedUrl.includes("/bpe")) {
+    metadata.domain = "bpe";
+  } else if (normalizedUrl.includes("/dce")) {
+    metadata.domain = "dce";
+  } else if (normalizedUrl.includes("/cff")) {
+    metadata.domain = "cff";
+  } else if (normalizedUrl.includes("/pes")) {
+    metadata.domain = "pes";
+  } else if (normalizedUrl.includes("/one")) {
+    metadata.domain = "one";
+  } else if (normalizedUrl.includes("/difal")) {
+    metadata.domain = "difal";
+  } else if (normalizedUrl.includes("/mdfe")) {
+    metadata.domain = "mdfe";
+  } else if (normalizedTitle.includes("nf-e") || normalizedTitle.includes("nfe") || normalizedUrl.includes("/nfe")) {
     metadata.domain = "nfe";
     if (normalizedTitle.includes("modelo 55") || normalizedTitle.includes("m55")) {
       metadata.modelo = "55";
@@ -619,6 +645,52 @@ function scoreVectorStores(document: PortalDocument) {
       if (storeId.includes("cte")) {
         score += 5;
         rationale.push("Título/URL menciona CT-e e store é específico para CT-e.");
+      }
+    }
+
+    // Match por domínios SVRS (documentos-bpe, documentos-nf3e, etc.)
+    const domainStoreMap: Array<{ path: string; storePrefix: string }> = [
+      { path: "/bpe", storePrefix: "documentos-bpe" },
+      { path: "/nf3e", storePrefix: "documentos-nf3e" },
+      { path: "/dce", storePrefix: "documentos-dce" },
+      { path: "/nfgas", storePrefix: "documentos-nfgas" },
+      { path: "/cff", storePrefix: "documentos-cff" },
+      { path: "/nff", storePrefix: "documentos-nff" },
+      { path: "/nfag", storePrefix: "documentos-nfag" },
+      { path: "/pes", storePrefix: "documentos-pes" },
+      { path: "/nfcom", storePrefix: "documentos-nfcom" },
+      { path: "/one", storePrefix: "documentos-one" },
+      { path: "/nfabi", storePrefix: "documentos-nfeab" },
+      { path: "/difal", storePrefix: "documentos-difal" },
+    ];
+    for (const { path, storePrefix } of domainStoreMap) {
+      if (normalizedUrl.includes(path) && storeId.includes(storePrefix)) {
+        score += 5;
+        rationale.push(`URL do portal SVRS ${path} e store ${storePrefix}.`);
+        break;
+      }
+    }
+
+    // Match por document.domain quando disponível
+    if (document.domain) {
+      const domainToStore: Record<string, string> = {
+        bpe: "documentos-bpe",
+        nf3e: "documentos-nf3e",
+        dce: "documentos-dce",
+        nfgas: "documentos-nfgas",
+        cff: "documentos-cff",
+        nff: "documentos-nff",
+        nfag: "documentos-nfag",
+        pes: "documentos-pes",
+        nfcom: "documentos-nfcom",
+        one: "documentos-one",
+        nfeab: "documentos-nfeab",
+        difal: "documentos-difal",
+      };
+      const expectedStore = domainToStore[document.domain];
+      if (expectedStore && storeId.includes(expectedStore)) {
+        score += 5;
+        rationale.push(`Domain ${document.domain} mapeia para ${expectedStore}.`);
       }
     }
 

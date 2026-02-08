@@ -64,3 +64,198 @@ portals:
     baseUrl: "https://dfe-portal.svrs.rs.gov.br"
     listingPath: "/Cte/Legislacao"
     type: "nacional"
+  - id: svrs-mdfe-noticias
+    name: SVRS MDF-e Notícias (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Mdfe/Noticias"
+    type: "nacional"
+  - id: svrs-mdfe-documentos
+    name: SVRS MDF-e Documentos (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Mdfe/Documentos"
+    type: "nacional"
+  - id: svrs-mdfe-legislacao
+    name: SVRS MDF-e Legislação (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Mdfe/Legislacao"
+    type: "nacional"
+  - id: svrs-bpe-noticias
+    name: SVRS BPe Notícias (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Bpe/Noticias"
+    type: "nacional"
+  - id: svrs-bpe-documentos
+    name: SVRS BPe Documentos (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Bpe/Documentos"
+    type: "nacional"
+  - id: svrs-bpe-legislacao
+    name: SVRS BPe Legislação (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Bpe/Legislacao"
+    type: "nacional"
+  - id: svrs-nf3e-noticias
+    name: SVRS NF3e Notícias (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nf3e/Noticias"
+    type: "nacional"
+  - id: svrs-nf3e-documentos
+    name: SVRS NF3e Documentos (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nf3e/Documentos"
+    type: "nacional"
+  - id: svrs-nf3e-legislacao
+    name: SVRS NF3e Legislação (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nf3e/Legislacao"
+    type: "nacional"
+  - id: svrs-dce-noticias
+    name: SVRS DCe Notícias (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Dce/Noticias"
+    type: "nacional"
+  - id: svrs-dce-documentos
+    name: SVRS DCe Documentos (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Dce/Documentos"
+    type: "nacional"
+  - id: svrs-dce-legislacao
+    name: SVRS DCe Legislação (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Dce/Legislacao"
+    type: "nacional"
+  - id: svrs-nfgas-noticias
+    name: SVRS NFGas Notícias (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nfgas/Noticias"
+    type: "nacional"
+  - id: svrs-nfgas-documentos
+    name: SVRS NFGas Documentos (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nfgas/Documentos"
+    type: "nacional"
+  - id: svrs-nfgas-legislacao
+    name: SVRS NFGas Legislação (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nfgas/Legislacao"
+    type: "nacional"
+  - id: svrs-cff-noticias
+    name: SVRS Conformidade Fácil Notícias (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Cff/Noticias"
+    type: "nacional"
+  - id: svrs-cff-documentos
+    name: SVRS Conformidade Fácil Documentos (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Cff/Documentos"
+    type: "nacional"
+  - id: svrs-cff-legislacao
+    name: SVRS Conformidade Fácil Legislação (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Cff/Legislacao"
+    type: "nacional"
+  - id: svrs-nff-noticias
+    name: SVRS NFF Notícias (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nff/Noticias"
+    type: "nacional"
+  - id: svrs-nff-documentos
+    name: SVRS NFF Documentos (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nff/Documentos"
+    type: "nacional"
+  - id: svrs-nff-legislacao
+    name: SVRS NFF Legislação (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nff/Legislacao"
+    type: "nacional"
+  - id: svrs-nfag-noticias
+    name: SVRS NFAg Notícias (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nfag/Noticias"
+    type: "nacional"
+  - id: svrs-nfag-documentos
+    name: SVRS NFAg Documentos (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nfag/Documentos"
+    type: "nacional"
+  - id: svrs-nfag-legislacao
+    name: SVRS NFAg Legislação (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nfag/Legislacao"
+    type: "nacional"
+  - id: svrs-pes-noticias
+    name: SVRS PES Notícias (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Pes/Noticias"
+    type: "nacional"
+  - id: svrs-pes-documentos
+    name: SVRS PES Documentos (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Pes/Documentos"
+    type: "nacional"
+  - id: svrs-pes-legislacao
+    name: SVRS PES Legislação (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Pes/Legislacao"
+    type: "nacional"
+  - id: svrs-nfcom-noticias
+    name: SVRS NFCom Notícias (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nfcom/Noticias"
+    type: "nacional"
+  - id: svrs-nfcom-documentos
+    name: SVRS NFCom Documentos (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nfcom/Documentos"
+    type: "nacional"
+  - id: svrs-nfcom-legislacao
+    name: SVRS NFCom Legislação (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nfcom/Legislacao"
+    type: "nacional"
+  - id: svrs-one-noticias
+    name: SVRS ONE Notícias (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/One/Noticias"
+    type: "nacional"
+  - id: svrs-one-documentos
+    name: SVRS ONE Documentos (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/One/Documentos"
+    type: "nacional"
+  - id: svrs-one-legislacao
+    name: SVRS ONE Legislação (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/One/Legislacao"
+    type: "nacional"
+  - id: svrs-nfeab-noticias
+    name: SVRS NFeAB Notícias (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nfabi/Noticias"
+    type: "nacional"
+  - id: svrs-nfeab-documentos
+    name: SVRS NFeAB Documentos (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nfabi/Documentos"
+    type: "nacional"
+  - id: svrs-nfeab-legislacao
+    name: SVRS NFeAB Legislação (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Nfabi/Legislacao"
+    type: "nacional"
+  - id: svrs-difal-noticias
+    name: SVRS DIFAL Notícias (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Difal/Noticias"
+    type: "nacional"
+  - id: svrs-difal-documentos
+    name: SVRS DIFAL Documentos (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Difal/Documentos"
+    type: "nacional"
+  - id: svrs-difal-legislacao
+    name: SVRS DIFAL Legislação (SEFAZ Virtual RS)
+    baseUrl: "https://dfe-portal.svrs.rs.gov.br"
+    listingPath: "/Difal/Legislacao"
+    type: "nacional"

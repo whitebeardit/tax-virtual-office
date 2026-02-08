@@ -4,35 +4,46 @@ Este documento descreve os portais fiscais monitorados pelo sistema Tax Virtual 
 
 ## Resumo
 
-O sistema monitora **14 portais fiscais** organizados em:
+O sistema monitora **60+ portais fiscais** organizados em:
 
-- **12 Portais Nacionais**:
-  - ENCAT NFC-e
+- **Portais Nacionais**:
   - Portal Nacional NF-e
   - CONFAZ Ajustes SINIEF
-  - **SVRS NF-e** (3 seções):
-    - SVRS NF-e Notícias
-    - SVRS NF-e Documentos
-    - SVRS NF-e Legislação
-  - **SVRS NFC-e** (3 seções):
-    - SVRS NFC-e Notícias
-    - SVRS NFC-e Documentos
-    - SVRS NFC-e Legislação
-  - **SVRS CT-e** (3 seções):
-    - SVRS CT-e Notícias
-    - SVRS CT-e Documentos
-    - SVRS CT-e Legislação
+  - **SVRS (16 documentos fiscais)** – 48 seções (3 por documento): Notícias, Documentos, Legislação
 
 - **2 Portais Estaduais**:
   - SEFAZ-SP NFC-e
   - SEFAZ-MG NF-e
 
+**Política: preferir SVRS** – Quando existir mais de um portal cobrindo o mesmo assunto, utilizar preferencialmente o da SVRS.
+
 **Nota sobre SVRS**: A SEFAZ Virtual do Rio Grande do Sul (SVRS) é um autorizador compartilhado utilizado por aproximadamente **metade das Unidades Federativas**. O portal SVRS organiza as informações **por assunto/documento fiscal e por tipo de conteúdo**, com três seções para cada documento:
-- **Notícias** (`/Nfe/Noticias`, `/Nfce/Noticias`, `/Cte/Noticias`): Avisos, comunicados e atualizações
-- **Documentos** (`/Nfe/Documentos`, `/Nfce/Documentos`, `/Cte/Documentos`): Manuais técnicos, notas técnicas, schemas
-- **Legislação** (`/Nfe/Legislacao`, `/Nfce/Legislacao`, `/Cte/Legislacao`): Leis, decretos e regulamentações
+- **Notícias** (`/{Documento}/Noticias`): Avisos, comunicados e atualizações
+- **Documentos** (`/{Documento}/Documentos`): Manuais técnicos, notas técnicas, schemas
+- **Legislação** (`/{Documento}/Legislacao`): Leis, decretos e regulamentações
 
 Por isso, configuramos portais separados para cada seção de cada documento fiscal da SVRS.
+
+### 16 Documentos SVRS Monitorados
+
+| Documento | Path | IDs dos portais |
+|------------|------|-----------------|
+| NFe | /Nfe | svrs-nfe-noticias, svrs-nfe-documentos, svrs-nfe-legislacao |
+| NFCe | /Nfce | svrs-nfce-* |
+| CTe | /Cte | svrs-cte-* |
+| MDFe | /Mdfe | svrs-mdfe-* |
+| BPe | /Bpe | svrs-bpe-* |
+| NF3e | /Nf3e | svrs-nf3e-* |
+| DCe | /Dce | svrs-dce-* |
+| NFGas | /Nfgas | svrs-nfgas-* |
+| CFF | /Cff | svrs-cff-* |
+| NFF | /Nff | svrs-nff-* |
+| NFAg | /Nfag | svrs-nfag-* |
+| PES | /Pes | svrs-pes-* |
+| NFCom | /Nfcom | svrs-nfcom-* |
+| ONE | /One | svrs-one-* |
+| NFeAB | /Nfabi | svrs-nfeab-* |
+| DIFAL | /Difal | svrs-difal-* |
 
 ## Configuração
 

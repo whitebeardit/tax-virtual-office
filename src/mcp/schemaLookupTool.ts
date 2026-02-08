@@ -181,7 +181,7 @@ export async function lookupSchema(
   const results: SchemaIndexEntry[] = [];
   
   // Se domínio especificado, buscar apenas nele
-  const domains = domain ? [domain] : ['nfe', 'nfce', 'confaz', 'mdfe', 'other'];
+  const domains = domain ? [domain] : ['nfe', 'nfce', 'confaz', 'mdfe', 'cte', 'bpe', 'nf3e', 'dce', 'nfgas', 'nff', 'nfag', 'nfcom', 'one', 'nfeab', 'pes', 'difal', 'other'];
   
   for (const dom of domains) {
     const index = await loadSchemaIndex(dom);
@@ -234,7 +234,7 @@ export async function findRelatedSchemas(
   logger.info({ criteria }, 'Buscando schemas relacionados');
   
   const results: SchemaIndexEntry[] = [];
-  const domains = criteria.domain ? [criteria.domain] : ['nfe', 'nfce', 'confaz', 'mdfe', 'other'];
+  const domains = criteria.domain ? [criteria.domain] : ['nfe', 'nfce', 'confaz', 'mdfe', 'cte', 'bpe', 'nf3e', 'dce', 'nfgas', 'nff', 'nfag', 'nfcom', 'one', 'nfeab', 'pes', 'difal', 'other'];
   
   for (const dom of domains) {
     const index = await loadSchemaIndex(dom);

@@ -52,7 +52,7 @@
     ]
   },
   "portals": {
-    "description": "Portais oficiais de documentos fiscais eletrônicos",
+    "description": "Portais oficiais de documentos fiscais eletrônicos (preferir SVRS quando disponível)",
     "list": [
       {
         "id": "nfe",
@@ -64,7 +64,7 @@
       {
         "id": "nfe-svrs",
         "name": "SVRS NF-e (SEFAZ Virtual RS)",
-        "urlBase": "https://dfe-portal.svrs.rs.gov.br",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br/Nfe",
         "domain": "dfe-portal.svrs.rs.gov.br",
         "type": "nacional",
         "sections": [
@@ -76,7 +76,7 @@
       {
         "id": "nfce-svrs",
         "name": "SVRS NFC-e (SEFAZ Virtual RS)",
-        "urlBase": "https://dfe-portal.svrs.rs.gov.br",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br/Nfce",
         "domain": "dfe-portal.svrs.rs.gov.br",
         "type": "nacional",
         "sections": [
@@ -86,15 +86,171 @@
         ]
       },
       {
+        "id": "cte-svrs",
+        "name": "SVRS CT-e (SEFAZ Virtual RS)",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br/Cte",
+        "domain": "dfe-portal.svrs.rs.gov.br",
+        "type": "nacional",
+        "sections": [
+          "/Cte/Noticias",
+          "/Cte/Documentos",
+          "/Cte/Legislacao"
+        ]
+      },
+      {
         "id": "mdfe-svrs",
         "name": "SVRS MDF-e (SEFAZ Virtual RS)",
-        "urlBase": "https://dfe-portal.svrs.rs.gov.br",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br/Mdfe",
         "domain": "dfe-portal.svrs.rs.gov.br",
         "type": "nacional",
         "sections": [
           "/Mdfe/Noticias",
           "/Mdfe/Documentos",
           "/Mdfe/Legislacao"
+        ]
+      },
+      {
+        "id": "bpe-svrs",
+        "name": "SVRS BPe (SEFAZ Virtual RS)",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br/Bpe",
+        "domain": "dfe-portal.svrs.rs.gov.br",
+        "type": "nacional",
+        "sections": [
+          "/Bpe/Noticias",
+          "/Bpe/Documentos",
+          "/Bpe/Legislacao"
+        ]
+      },
+      {
+        "id": "nf3e-svrs",
+        "name": "SVRS NF3e (SEFAZ Virtual RS)",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br/Nf3e",
+        "domain": "dfe-portal.svrs.rs.gov.br",
+        "type": "nacional",
+        "sections": [
+          "/Nf3e/Noticias",
+          "/Nf3e/Documentos",
+          "/Nf3e/Legislacao"
+        ]
+      },
+      {
+        "id": "dce-svrs",
+        "name": "SVRS DCe (SEFAZ Virtual RS)",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br/Dce",
+        "domain": "dfe-portal.svrs.rs.gov.br",
+        "type": "nacional",
+        "sections": [
+          "/Dce/Noticias",
+          "/Dce/Documentos",
+          "/Dce/Legislacao"
+        ]
+      },
+      {
+        "id": "nfgas-svrs",
+        "name": "SVRS NFGas (SEFAZ Virtual RS)",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br/Nfgas",
+        "domain": "dfe-portal.svrs.rs.gov.br",
+        "type": "nacional",
+        "sections": [
+          "/Nfgas/Noticias",
+          "/Nfgas/Documentos",
+          "/Nfgas/Legislacao"
+        ]
+      },
+      {
+        "id": "cff-svrs",
+        "name": "SVRS Conformidade Fácil (SEFAZ Virtual RS)",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br/Cff",
+        "domain": "dfe-portal.svrs.rs.gov.br",
+        "type": "nacional",
+        "sections": [
+          "/Cff/Noticias",
+          "/Cff/Documentos",
+          "/Cff/Legislacao"
+        ]
+      },
+      {
+        "id": "nff-svrs",
+        "name": "SVRS NFF (SEFAZ Virtual RS)",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br/Nff",
+        "domain": "dfe-portal.svrs.rs.gov.br",
+        "type": "nacional",
+        "sections": [
+          "/Nff/Noticias",
+          "/Nff/Documentos",
+          "/Nff/Legislacao"
+        ]
+      },
+      {
+        "id": "nfag-svrs",
+        "name": "SVRS NFAg (SEFAZ Virtual RS)",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br/Nfag",
+        "domain": "dfe-portal.svrs.rs.gov.br",
+        "type": "nacional",
+        "sections": [
+          "/Nfag/Noticias",
+          "/Nfag/Documentos",
+          "/Nfag/Legislacao"
+        ]
+      },
+      {
+        "id": "pes-svrs",
+        "name": "SVRS PES (SEFAZ Virtual RS)",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br/Pes",
+        "domain": "dfe-portal.svrs.rs.gov.br",
+        "type": "nacional",
+        "sections": [
+          "/Pes/Noticias",
+          "/Pes/Documentos",
+          "/Pes/Legislacao"
+        ]
+      },
+      {
+        "id": "nfcom-svrs",
+        "name": "SVRS NFCom (SEFAZ Virtual RS)",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br/Nfcom",
+        "domain": "dfe-portal.svrs.rs.gov.br",
+        "type": "nacional",
+        "sections": [
+          "/Nfcom/Noticias",
+          "/Nfcom/Documentos",
+          "/Nfcom/Legislacao"
+        ]
+      },
+      {
+        "id": "one-svrs",
+        "name": "SVRS ONE (SEFAZ Virtual RS)",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br/One",
+        "domain": "dfe-portal.svrs.rs.gov.br",
+        "type": "nacional",
+        "sections": [
+          "/One/Noticias",
+          "/One/Documentos",
+          "/One/Legislacao"
+        ]
+      },
+      {
+        "id": "nfeab-svrs",
+        "name": "SVRS NFeAB (SEFAZ Virtual RS)",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br/Nfabi",
+        "domain": "dfe-portal.svrs.rs.gov.br",
+        "type": "nacional",
+        "sections": [
+          "/Nfabi/Noticias",
+          "/Nfabi/Documentos",
+          "/Nfabi/Legislacao"
+        ]
+      },
+      {
+        "id": "difal-svrs",
+        "name": "SVRS DIFAL (SEFAZ Virtual RS)",
+        "urlBase": "https://dfe-portal.svrs.rs.gov.br/Difal",
+        "domain": "dfe-portal.svrs.rs.gov.br",
+        "type": "nacional",
+        "sections": [
+          "/Difal/Noticias",
+          "/Difal/Documentos",
+          "/Difal/Legislacao"
         ]
       },
       {

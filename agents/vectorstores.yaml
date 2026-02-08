@@ -90,6 +90,36 @@ vectorStores:
     description: "Normas estaduais sobre IBS/CBS/IS vinculadas aos documentos eletrônicos."
 
   # ============================================
+  # DOCUMENTOS POR DOMÍNIO (NOVOS DFE)
+  # ============================================
+  - id: documentos-bpe
+    description: "Documentos do BPe (Bilhete de Passagem Eletrônico)."
+  - id: documentos-nf3e
+    description: "Documentos da NF 3.0 (Nota Fiscal 3.0)."
+  - id: documentos-dce
+    description: "Documentos do DCe."
+  - id: documentos-nfgas
+    description: "Documentos da NF de Gás."
+  - id: documentos-nff
+    description: "Documentos da NFF (Nota Fiscal de Fornecimento)."
+  - id: documentos-nfag
+    description: "Documentos da NF Avulsa."
+  - id: documentos-nfcom
+    description: "Documentos da NFCom (Nota Fiscal de Comunicação)."
+  - id: documentos-one
+    description: "Documentos da ONE (Ordem de Entrega Eletrônica)."
+  - id: documentos-nfeab
+    description: "Documentos da NFe Ambiental."
+  - id: documentos-pes
+    description: "Documentos PES."
+  - id: documentos-difal
+    description: "Documentos DIFAL."
+  - id: documentos-cff
+    description: "Documentos da Conformidade Fácil (CFF) - ferramentas e validação de documentos fiscais."
+  - id: documentos-diversos
+    description: "Documentos manuais ou de domínios não mapeados."
+
+  # ============================================
   # JURISPRUDÊNCIA
   # ============================================
   - id: jurisprudencia-tributaria
