@@ -3,6 +3,16 @@ import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { validate } from '../../middleware/validation.js';
 
+jest.mock('../../utils/logger.js', () => ({
+  logger: {
+    warn: jest.fn(),
+    error: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    child: jest.fn(() => ({ warn: jest.fn(), error: jest.fn(), info: jest.fn(), debug: jest.fn() })),
+  },
+}));
+
 describe('Validation Middleware', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;

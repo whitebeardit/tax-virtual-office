@@ -51,6 +51,12 @@ Fonte primária de informação para conteúdo completo e busca semântica.
     
     **JURISPRUDÊNCIA:**
     - `jurisprudencia-tributaria` (pareceres, decisões, consultas).
+    
+    **DOCUMENTOS POR DOMÍNIO:**
+    - `documentos-bpe`, `documentos-nf3e`, `documentos-dce`, `documentos-nfgas`
+    - `documentos-nff`, `documentos-nfag`, `documentos-nfcom`, `documentos-one`
+    - `documentos-nfeab`, `documentos-pes`, `documentos-difal`
+    - `documentos-diversos` (documentos manuais e domínios não mapeados).
 - **web** (uso complementar e restrito):
   - Apenas para dados objetivos (datas de publicação, número e ementa de lei, URL oficial), priorizando:
     - `*.gov.br`, `*.fazenda.gov.br`, `*.fazenda.sp.gov.br`, `*.fazenda.mg.gov.br`
@@ -103,9 +109,13 @@ Quando incluir URLs na resposta:
    - `dfe-portal.svrs.rs.gov.br` (SVRS - SEFAZ Virtual RS)
    - `confaz.fazenda.gov.br` (CONFAZ)
 
-4. **Portais principais**:
+4. **Portais principais** (preferir SVRS quando disponível):
    - Portal Nacional NF-e: `https://www.nfe.fazenda.gov.br/portal`
-   - SVRS NF-e/NFC-e/CT-e/MDF-e: `https://dfe-portal.svrs.rs.gov.br`
+   - SVRS (16 documentos fiscais): `https://dfe-portal.svrs.rs.gov.br`
+     - NFe: `/Nfe`, NFCe: `/Nfce`, CTe: `/Cte`, MDFe: `/Mdfe`
+     - BPe: `/Bpe`, NF3e: `/Nf3e`, DCe: `/Dce`, NFGas: `/Nfgas`
+     - CFF: `/Cff`, NFF: `/Nff`, NFAg: `/Nfag`, PES: `/Pes`
+     - NFCom: `/Nfcom`, ONE: `/One`, NFeAB: `/Nfabi`, DIFAL: `/Difal`
    - CONFAZ: `https://www.confaz.fazenda.gov.br`
 
 ### Regras de URLs

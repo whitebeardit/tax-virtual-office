@@ -20,6 +20,8 @@ export default {
     ],
   },
   testMatch: ['**/__tests__/**/*.test.ts', '**/?(*.)+(spec|test).ts'],
+  globalSetup: '<rootDir>/tests/global-setup.ts',
+  globalTeardown: '<rootDir>/tests/global-teardown.ts',
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',

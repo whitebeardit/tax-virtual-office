@@ -360,3 +360,11 @@ Após testes manuais bem-sucedidos:
 4. **Monitorar métricas** de classificação (accuracy, confidence scores)
 
 
+
+
+
+
+
+
+
+

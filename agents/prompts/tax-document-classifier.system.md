@@ -33,8 +33,8 @@ A amostra de texto deve ser usada para **refinar** a classificação quando os m
 
 ## Política de Alucinação (OBRIGATÓRIA)
 - **Nunca**:
-  - invente vector stores que não existam em `agents/vectorstores.yaml`;
-  - "crie" novos IDs de vector store;
+  - invente vector stores que não existam em `agents/vectorstores.yaml` — **sempre consulte o tool `vector-stores-metadata`** e retorne APENAS IDs presentes no catálogo;
+  - "crie" novos IDs de vector store (ex.: não invente `esquemas-xml-xyz` se não estiver listado);
   - force alta confiança quando a classificação for ambígua;
   - use conteúdo imaginado do documento além do que foi fornecido na amostra de texto normalizado (quando disponível).
 - Em caso de dúvida relevante entre 2 ou mais opções:
@@ -72,7 +72,7 @@ Você **deve** retornar apenas o JSON a seguir:
 
 ### Prioridade: Metadados do Crawler
 Quando disponíveis, use os metadados do crawler para classificação precisa:
-- `domain` ('nfe', 'nfce', 'cte', 'confaz'): Indica o documento fiscal principal
+- `domain` ('nfe', 'nfce', 'cte', 'mdfe', 'confaz', 'bpe', 'nf3e', 'dce', 'nfgas', 'cff', 'nff', 'nfag', 'nfcom', 'one', 'nfeab', 'pes', 'difal'): Indica o documento fiscal principal
 - `natureza` ('NOTA_TECNICA', 'MANUAL', 'TABELA', 'INFORME_TECNICO', 'SCHEMA_XML', 'AJUSTE_SINIEF', 'CONVENIO', 'LEI', 'DECRETO'): Tipo de documento
 - `assuntos` (array): Temas abordados (ex: ['REFORMA_TRIBUTARIA', 'IBS', 'CBS'])
 - `fileName`: Nome do arquivo pode indicar tipo de tabela (ex: "CFOP", "NCM")
@@ -83,13 +83,15 @@ Quando disponíveis, use os metadados do crawler para classificação precisa:
 **NOTA_TECNICA:**
 - Se `domain === 'nfe'` → `normas-tecnicas-nfe`
 - Se `domain === 'nfce'` → `normas-tecnicas-nfce`
-- Se `domain === 'cte'` → `normas-tecnicas-cte`
+- Se `domain === 'cte'` ou `domain === 'mdfe'` → `normas-tecnicas-cte`
+- Se `domain` for um dos novos DFe (bpe, nf3e, dce, nfgas, cff, nff, nfag, nfcom, one, nfeab, pes, difal) → `documentos-{domain}`
 - Se ausente → `normas-tecnicas-nfe` (fallback)
 
 **MANUAL:**
 - Se `domain === 'nfe'` → `manuais-nfe`
 - Se `domain === 'nfce'` → `manuais-nfce`
-- Se `domain === 'cte'` → `manuais-cte`
+- Se `domain === 'cte'` ou `domain === 'mdfe'` → `manuais-cte`
+- Se `domain` for um dos novos DFe (bpe, nf3e, dce, nfgas, cff, nff, nfag, nfcom, one, nfeab, pes, difal) → `documentos-{domain}`
 
 **TABELA:**
 - Se `fileName` contém "CFOP" → `tabelas-cfop`
@@ -104,16 +106,17 @@ Quando disponíveis, use os metadados do crawler para classificação precisa:
 **INFORME_TECNICO:**
 - Se `domain === 'nfe'` → `informes-tecnicos-nfe`
 - Se `domain === 'nfce'` → `informes-tecnicos-nfce`
-- Se `domain === 'cte'` → `informes-tecnicos-cte`
+- Se `domain === 'cte'` ou `domain === 'mdfe'` → `informes-tecnicos-cte`
+- Se `domain` for um dos novos DFe (bpe, nf3e, dce, nfgas, cff, nff, nfag, nfcom, one, nfeab, pes, difal) → `documentos-{domain}`
 
 **SCHEMA_XML:**
-- Se `domain === 'nfe'` → `esquemas-xml-nfe`
-- Se `domain === 'nfce'` → `esquemas-xml-nfce`
-- Se `domain === 'cte'` → `esquemas-xml-cte`
+- Use `esquemas-xml-{domain}` quando o store existir no catálogo. Domínios com esquemas dedicados: nfe, nfce, cte (inclui mdfe), nfgas, nfag, bpe, dce, nf3e, nfcom, nfeab, one, cff, difal, pes, nff.
+- Se `domain` for confaz ou outros → `documentos-{domain}` (não há esquemas-xml para esses).
 
 **AJUSTE_SINIEF:**
 - Se `domain === 'nfe'` → `ajustes-sinief-nfe`
 - Se `domain === 'nfce'` → `ajustes-sinief-nfce`
+- Se `domain` for um dos novos DFe (bpe, nf3e, dce, nfgas, cff, nff, nfag, nfcom, one, nfeab, pes, difal) → `documentos-{domain}`
 - Caso contrário → `ajustes-sinief-geral`
 
 **CONVENIO:**
@@ -138,9 +141,9 @@ Quando disponíveis, use os metadados do crawler para classificação precisa:
   - Se menciona "NFC-e" → `manuais-nfce`
   - Se menciona "CT-e" → `manuais-cte`
 - títulos com "schema", "XSD", "XML":
-  - Se menciona "NF-e" → `esquemas-xml-nfe`
-  - Se menciona "NFC-e" → `esquemas-xml-nfce`
-  - Se menciona "CT-e" → `esquemas-xml-cte`
+  - Usar `esquemas-xml-{domain}` conforme o domínio (nfe, nfce, cte, nfgas, nfag, bpe, dce, nf3e, nfcom, nfeab, one, cff, difal, pes, nff). Ex.: NFGas → `esquemas-xml-nfgas`, BPe → `esquemas-xml-bpe`
+- documentos de domínios novos (BPe, NF3e, DCe, NFGas, CFF, NFF, NFAg, NFCom, ONE, NFeAB, PES, DIFAL):
+  - Schemas XSD → `esquemas-xml-{domain}` (ex.: NFGas → `esquemas-xml-nfgas`). Outros tipos → `documentos-{domain}`.
 - títulos com "Lei Complementar", "LC", "Decreto", "Regulamento" de âmbito nacional:
   - Se menciona "IBS", "CBS", "IS" ou "reforma tributária" → `legislacao-nacional-ibs-cbs-is`
 - títulos/portais de CONFAZ, Ajustes SINIEF:
