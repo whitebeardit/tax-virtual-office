@@ -41,9 +41,8 @@ export async function runUserQueryWorkflow(
 }
 
 const specialistCatalog: AgentId[] = [
-  "specialist-nfce",
-  "specialist-nfe",
-  "specialist-cte",
+  "spec-mercadorias",
+  "spec-transporte",
   "legislacao-ibs-cbs",
 ];
 
@@ -51,16 +50,12 @@ function pickSpecialists(question: string): AgentId[] {
   const normalized = question.toLowerCase();
   const selected: AgentId[] = [];
 
-  if (normalized.includes("nfc")) {
-    selected.push("specialist-nfce");
+  if (normalized.includes("nfc") || normalized.includes("nf-e") || normalized.includes("nfe")) {
+    selected.push("spec-mercadorias");
   }
 
-  if (normalized.includes("nf-e") || normalized.includes("nfe")) {
-    selected.push("specialist-nfe");
-  }
-
-  if (normalized.includes("cte") || normalized.includes("ct-e")) {
-    selected.push("specialist-cte");
+  if (normalized.includes("cte") || normalized.includes("ct-e") || normalized.includes("mdfe") || normalized.includes("bpe")) {
+    selected.push("spec-transporte");
   }
 
   if (normalized.includes("ibs") || normalized.includes("cbs")) {

@@ -15,7 +15,7 @@ Repositório base para o Escritório Tributário Virtual com agentes coordenador
 Todos os prompts de system já estão consolidados e versionados em `agents/prompts/*.system.md`.
 
 - `coordinator.system.md`: orquestra especialistas e ferramentas MCP.
-- `specialist-nfce.system.md`, `specialist-nfe.system.md`, `specialist-cte.system.md`: especialistas por documento fiscal.
+- `specialist-nfe.system.md`, `specialist-cte.system.md`: especialistas por documento fiscal (NF-e/NFC-e e CT-e).
 - `legislacao-ibs-cbs.system.md`: acompanha a reforma tributária.
 - `tax-portal-watcher.system.md`: monitora novos documentos em portais fiscais.
 - `tax-document-classifier.system.md`: decide vector store e tags de armazenamento.

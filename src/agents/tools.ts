@@ -26,56 +26,27 @@ IMPORTANTE: Os documentos armazenados contêm metadados com URLs originais (camp
 Quando os resultados incluírem informações sobre documentos, SEMPRE inclua a URL original quando disponível nos metadados.
 Se a URL não estiver explícita no resultado, mas você souber que o documento tem uma URL original armazenada, mencione que a URL está disponível nos metadados do documento.
 
-Vector stores disponíveis organizados por categoria:
+Vector stores disponíveis (12 stores por capacidade + família):
 
-TABELAS (Compartilhadas):
-- tabelas-cfop: CFOP compartilhado entre NF-e, NFC-e, CT-e
-- tabelas-ncm: NCM compartilhado
-- tabelas-meios-pagamento: Meios de pagamento (NF-e, NFC-e)
-- tabelas-aliquotas: Alíquotas por UF
-- tabelas-codigos: CST, CSOSN, códigos ANP, etc.
-- tabelas-ibc-cbs: Tabelas de reforma tributária
+ESPECIFICAÇÕES POR FAMÍLIA:
+- vs_specs_mercadorias: NF-e, NFC-e (MOC, NT, manuais)
+- vs_specs_transporte: CT-e, MDF-e, BP-e
+- vs_specs_utilities: NF3-e, NFCom, NF-Gás, NFAg
+- vs_specs_plataformas: NFF, PES, CFF, ONE, DIFAL
+- vs_specs_declaracoes: DC-e
 
-TABELAS (Específicas):
-- tabelas-nfe-especificas: Tabelas específicas NF-e
-- tabelas-nfce-especificas: Tabelas específicas NFC-e
+SCHEMAS E TABELAS (transversal):
+- vs_schemas_xsd: Todos XSDs, exemplos XML
+- vs_tabelas_fiscais: CFOP, NCM, meios pagamento, códigos, alíquotas, IBS/CBS
 
-NORMAS TÉCNICAS (por documento):
-- normas-tecnicas-nfe: NTs NF-e
-- normas-tecnicas-nfce: NTs NFC-e
-- normas-tecnicas-cte: NTs CT-e/MDF-e
+LEGAL:
+- vs_legal_federal: LC/leis/decretos, Reforma IBS/CBS/IS
+- vs_legal_confaz: Ajustes SINIEF, Convênios ICMS, Atos COTEPE
+- vs_legal_estados: Normas por UF
+- vs_jurisprudencia: Jurisprudência, pareceres
 
-MANUAIS (por documento):
-- manuais-nfe: Manuais NF-e (MOC, etc.)
-- manuais-nfce: Manuais NFC-e
-- manuais-cte: Manuais CT-e/MDF-e
-
-INFORMES TÉCNICOS (por documento):
-- informes-tecnicos-nfe: Informes NF-e
-- informes-tecnicos-nfce: Informes NFC-e
-- informes-tecnicos-cte: Informes CT-e/MDF-e
-
-SCHEMAS XML (por documento):
-- esquemas-xml-nfe: Schemas XSD NF-e (armazenados como .xml)
-- esquemas-xml-nfce: Schemas XSD NFC-e (armazenados como .xml)
-- esquemas-xml-cte: Schemas XSD CT-e/MDF-e (armazenados como .xml)
-- NOTA: Os arquivos XSD são armazenados com extensão .xml (não .xsd) pois a OpenAI não aceita .xsd. Ao buscar schemas XSD mencionados pelo usuário, procure por arquivos .xml com o mesmo nome base.
-
-AJUSTES SINIEF:
-- ajustes-sinief-nfe: Ajustes específicos NF-e
-- ajustes-sinief-nfce: Ajustes específicos NFC-e
-- ajustes-sinief-geral: Ajustes gerais
-
-CONFAZ:
-- convenios-icms: Convênios ICMS
-- atos-cotepe: Atos COTEPE
-
-LEGISLAÇÃO:
-- legislacao-nacional-ibs-cbs-is: IBS/CBS/IS, EC 132/2023, LC 214/2025
-- documentos-estaduais-ibc-cbs: Normas estaduais
-
-JURISPRUDÊNCIA:
-- jurisprudencia-tributaria: Pareceres e decisões
+OUTROS:
+- vs_changelog_normativo: Diffs, timelines, prazos
 
 Use esta ferramenta PRIMEIRO antes de responder perguntas, especialmente para:
 - Normas técnicas e legislação
@@ -88,7 +59,7 @@ Ao apresentar resultados, SEMPRE inclua URLs dos documentos originais quando dis
     vectorStoreId: z
       .string()
       .describe(
-        "ID do vector store a consultar (ex: 'legislacao-nacional-ibs-cbs-is', 'normas-tecnicas-nfe-nfce-cte')"
+        "ID do vector store a consultar (ex: 'vs_specs_mercadorias', 'vs_schemas_xsd', 'vs_legal_confaz')"
       ),
     query: z
       .string()
@@ -373,7 +344,7 @@ Domínios disponíveis: nfe, nfce, confaz, mdfe, cte, bpe, nf3e, dce, nfgas, nff
         return info;
       }).join("\n\n");
 
-      return `Encontrados ${results.length} schema(s) com o nome "${schemaName}":\n\n${formatted}\n\nUse file-search no vector store 'esquemas-xml-${results[0].domain}' para obter o conteúdo completo do schema.`;
+      return `Encontrados ${results.length} schema(s) com o nome "${schemaName}":\n\n${formatted}\n\nUse file-search no vector store 'vs_schemas_xsd' para obter o conteúdo completo do schema.`;
     } catch (error) {
       logger.error({ error, schemaName, domain }, "[schema-lookup] Erro");
       return `Erro ao buscar schema "${schemaName}": ${error instanceof Error ? error.message : String(error)}`;
@@ -422,3 +393,9 @@ export const coordinatorTools = [schemaLookupTool, fileSearchTool, webTool, logg
 export const specialistTools = [schemaLookupTool, fileSearchTool, loggerTool];
 
 export const classifierTools = [vectorStoresMetadataTool, loggerTool];
+
+/** Tools para triage-router: metadados dos stores + logger */
+export const triageRouterTools = [vectorStoresMetadataTool, loggerTool];
+
+/** Tools para source-planner: apenas logger (retorno de store ids é via instruções/resposta) */
+export const sourcePlannerTools = [loggerTool];

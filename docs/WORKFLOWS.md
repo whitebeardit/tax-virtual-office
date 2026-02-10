@@ -66,8 +66,7 @@ sequenceDiagram
 
 3. **Seleção de Especialistas**
    - `pickSpecialists()` usa heurística baseada em keywords:
-     - "nfc" → `specialist-nfce`
-     - "nf-e" ou "nfe" → `specialist-nfe`
+     - "nfc", "nf-e" ou "nfe" → `specialist-nfe` (NF-e modelo 55 e NFC-e modelo 65)
      - "cte" ou "ct-e" → `specialist-cte`
      - "ibs" ou "cbs" → `legislacao-ibs-cbs`
    - Se nenhum keyword encontrado, aciona todos os especialistas

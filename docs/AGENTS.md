@@ -29,23 +29,56 @@ O Tax Virtual Office utiliza uma arquitetura baseada em **agentes especializados
 - Explicitar limitações quando não houver base suficiente
 - Citar fontes formais (lei, decreto, NT, manual, schema)
 
-**Vector Stores Prioritários**:
-O coordinator consulta vector stores organizados por categoria conforme a natureza da pergunta. A estrutura completa com 30+ vector stores está documentada em [docs/VECTOR_STORES.md](VECTOR_STORES.md).
+**Vector Stores (12 stores por capacidade/família)**:
+O coordinator consulta os **12 vector stores** definidos em [docs/VECTOR_STORES.md](VECTOR_STORES.md): `vs_specs_mercadorias`, `vs_specs_transporte`, `vs_schemas_xsd`, `vs_tabelas_fiscais`, `vs_legal_federal`, `vs_legal_confaz`, `vs_legal_estados`, `vs_jurisprudencia`, etc. O coordinator pode delegar ao **Triage/Router** e ao **Source Planner** para classificar a intenção e escolher os stores, e aos **especialistas por capacidade** (spec-mercadorias, spec-transporte, legislacao-ibs-cbs).
 
-**Exemplos de Vector Stores por Categoria**:
-- **Legislação**: `legislacao-nacional-ibs-cbs-is`, `documentos-estaduais-ibc-cbs`
-- **Normas Técnicas** (por documento): `normas-tecnicas-nfe`, `normas-tecnicas-nfce`, `normas-tecnicas-cte`
-- **Manuais** (por documento): `manuais-nfe`, `manuais-nfce`, `manuais-cte`
-- **Tabelas**: `tabelas-cfop`, `tabelas-ncm`, `tabelas-aliquotas`, `tabelas-codigos`
-- **Jurisprudência**: `jurisprudencia-tributaria`
+### 2. Triage/Router e Source Planner
 
-O coordinator seleciona os vector stores mais relevantes baseado na análise da pergunta do usuário.
+#### 2.1. Triage / Router (`triage-router`)
 
-### 2. Especialistas em Documentos Fiscais
+**Responsabilidade**: Classificar a intenção da pergunta (trilha: Documento, Integração, Legislação, etc.) e definir família + doc_type quando aplicável.
 
-#### 2.1. Especialista NF-e (`specialist-nfe`)
+**Características**:
+- **Modelo**: `gpt-5.1`
+- **Ferramentas**: `vector-stores-metadata`, `logger`
+- **Prompt**: `agents/prompts/triage-router.system.md`
 
-**Responsabilidade**: Responder questões técnicas sobre NF-e modelo 55.
+#### 2.2. Source Planner (`source-planner`)
+
+**Responsabilidade**: Dado trilha + família + doc_type, indicar quais dos 12 vector stores consultar e em que ordem (primário → secundário).
+
+**Características**:
+- **Modelo**: `gpt-5.1`
+- **Ferramentas**: `logger`
+- **Prompt**: `agents/prompts/source-planner.system.md`
+
+### 3. Especialistas por Capacidade
+
+#### 3.1. Spec Mercadorias (`spec-mercadorias`)
+**Responsabilidade**: Especificações NF-e (modelo 55) e NFC-e (modelo 65).
+
+**Características**:
+- **Modelo**: `gpt-5.1`
+- **Ferramentas**: `file-search`, `logger`
+- **Prompt**: `agents/prompts/spec-mercadorias.system.md`
+
+**Vector Stores**: `vs_specs_mercadorias`, `vs_schemas_xsd`, `vs_tabelas_fiscais`, (opcional `vs_legal_confaz`).
+
+#### 3.2. Spec Transporte (`spec-transporte`)
+**Responsabilidade**: Especificações CT-e, MDF-e, BP-e.
+
+**Características**:
+- **Modelo**: `gpt-5.1`
+- **Ferramentas**: `file-search`, `logger`
+- **Prompt**: `agents/prompts/spec-transporte.system.md`
+
+**Vector Stores**: `vs_specs_transporte`, `vs_schemas_xsd`, `vs_tabelas_fiscais`, `vs_legal_confaz`.
+
+### 4. Especialistas em Documentos Fiscais (legado)
+
+#### 4.1. Especialista NF-e / NFC-e (`specialist-nfe`) — mantido para compatibilidade
+
+**Responsabilidade**: Responder questões técnicas sobre NF-e (modelo 55) e NFC-e (modelo 65).
 
 **Características**:
 - **Modelo**: `gpt-5.1`
@@ -53,51 +86,29 @@ O coordinator seleciona os vector stores mais relevantes baseado na análise da 
 - **Prompt**: `agents/prompts/specialist-nfe.system.md`
 
 **Escopo**:
-- Emissão, autorização, rejeição, cancelamento, inutilização
+- NF-e modelo 55 e NFC-e modelo 65: emissão, autorização, rejeição, cancelamento, inutilização
 - Eventos (Carta de Correção, Manifestação, EPEC)
-- Estrutura XML e schemas XSD
+- Estrutura XML e schemas XSD (ambos os modelos)
 - Web services SEFAZ
 - Regras de validação (CST, CFOP, NCM, CST/CSOSN)
-- Notas técnicas e manuais oficiais
+- Notas técnicas e manuais oficiais (Projeto NF-e, ENCAT, CONFAZ)
 
-**Vector Stores Primários**:
-- `normas-tecnicas-nfe` (Notas Técnicas específicas de NF-e)
-- `manuais-nfe` (Manuais oficiais, MOC, guias de implementação)
+**Vector Stores Primários** (unificados para 55 e 65):
+- `normas-tecnicas-nfe` (Notas Técnicas NF-e e NFC-e)
+- `manuais-nfe` (Manuais oficiais, MOC, guias de implementação, documentação ENCAT)
 - `informes-tecnicos-nfe` (Informes, comunicados, FAQs)
-- `esquemas-xml-nfe` (Schemas XSD, XMLs de exemplo)
+- `esquemas-xml-nfe` (Schemas XSD NF-e e NFC-e)
 - `tabelas-*` (Tabelas compartilhadas: CFOP, NCM, alíquotas, códigos)
+- `tabelas-nfe-especificas` (Tabelas específicas NF-e/NFC-e)
 
 **Vector Stores Secundários**:
 - `legislacao-nacional-ibs-cbs-is` (quando envolver reforma tributária)
 - `documentos-estaduais-ibc-cbs` (regras específicas de UF)
-- `ajustes-sinief-nfe` (Ajustes SINIEF específicos de NF-e)
+- `ajustes-sinief-nfe` (Ajustes SINIEF NF-e e NFC-e)
 
 **Nota**: Para lista completa de vector stores, consulte [docs/VECTOR_STORES.md](VECTOR_STORES.md)
 
-#### 2.2. Especialista NFC-e (`specialist-nfce`)
-
-**Responsabilidade**: Responder questões técnicas sobre NFC-e modelo 65.
-
-**Características**:
-- **Modelo**: `gpt-5.1`
-- **Ferramentas**: `file-search`, `logger`
-- **Prompt**: `agents/prompts/specialist-nfce.system.md`
-
-**Escopo**: Similar ao NF-e, mas focado em NFC-e (Nota Fiscal de Consumidor Eletrônica).
-
-**Vector Stores Primários**:
-- `normas-tecnicas-nfce` (Notas Técnicas específicas de NFC-e)
-- `manuais-nfce` (Manuais oficiais, guias de implementação)
-- `informes-tecnicos-nfce` (Informes, comunicados, FAQs)
-- `esquemas-xml-nfce` (Schemas XSD, XMLs de exemplo)
-- `tabelas-*` (Tabelas compartilhadas: CFOP, NCM, meios de pagamento, alíquotas)
-
-**Vector Stores Secundários**:
-- `legislacao-nacional-ibs-cbs-is` (quando envolver reforma tributária)
-- `documentos-estaduais-ibc-cbs` (regras específicas de UF)
-- `ajustes-sinief-nfce` (Ajustes SINIEF específicos de NFC-e)
-
-#### 2.3. Especialista CT-e (`specialist-cte`)
+#### 2.2. Especialista CT-e (`specialist-cte`)
 
 **Responsabilidade**: Responder questões técnicas sobre CT-e, CT-e OS e MDF-e.
 
@@ -106,21 +117,9 @@ O coordinator seleciona os vector stores mais relevantes baseado na análise da 
 - **Ferramentas**: `file-search`, `logger`
 - **Prompt**: `agents/prompts/specialist-cte.system.md`
 
-**Escopo**: Conhecimento Técnico de Transporte Eletrônico e Manifesto de Documentos Fiscais.
+**Vector Stores**: use `vs_specs_transporte`, `vs_schemas_xsd`, `vs_tabelas_fiscais`, `vs_legal_confaz`. Ver [docs/VECTOR_STORES.md](VECTOR_STORES.md).
 
-**Vector Stores Primários**:
-- `normas-tecnicas-cte` (Notas Técnicas específicas de CT-e/MDF-e)
-- `manuais-cte` (Manuais oficiais, guias de implementação)
-- `informes-tecnicos-cte` (Informes, comunicados, FAQs)
-- `esquemas-xml-cte` (Schemas XSD, XMLs de exemplo)
-- `tabelas-cfop`, `tabelas-ncm` (Tabelas compartilhadas relevantes)
-
-**Vector Stores Secundários**:
-- `legislacao-nacional-ibs-cbs-is` (quando envolver reforma tributária)
-- `documentos-estaduais-ibc-cbs` (regras específicas de UF)
-- `ajustes-sinief-geral` (Ajustes SINIEF gerais)
-
-### 3. Especialista em Legislação (`legislacao-ibs-cbs`)
+### 5. Especialista em Legislação (`legislacao-ibs-cbs`)
 
 **Responsabilidade**: Responder questões sobre reforma tributária (IBS/CBS/IS).
 
@@ -136,19 +135,11 @@ O coordinator seleciona os vector stores mais relevantes baseado na análise da 
 - Decretos e regulamentos relacionados
 - Impactos sobre documentos fiscais eletrônicos
 
-**Vector Stores Primários**:
-- `legislacao-nacional-ibs-cbs-is` (EC 132/2023, LC 214/2025, decretos, regulamentos)
-- `tabelas-ibc-cbs` (Tabelas de alíquotas, códigos de transição)
-- `documentos-estaduais-ibc-cbs` (Normas estaduais sobre IBS/CBS/IS)
-- `jurisprudencia-tributaria` (Pareceres e decisões sobre reforma tributária)
+**Vector Stores**: `vs_legal_federal`, `vs_legal_confaz`, `vs_legal_estados`, `vs_jurisprudencia`, `vs_tabelas_fiscais`. Ver [docs/VECTOR_STORES.md](VECTOR_STORES.md).
 
-**Vector Stores Secundários**:
-- `convenios-icms`, `atos-cotepe` (CONFAZ - quando relevante)
-- Vector stores de documentos fiscais quando envolver impacto na reforma
+### 6. Agentes de Manutenção
 
-### 4. Agentes de Manutenção
-
-#### 4.1. Monitor de Portais (`tax-portal-watcher`)
+#### 6.1. Monitor de Portais (`tax-portal-watcher`)
 
 **Responsabilidade**: Monitorar portais fiscais e detectar novos documentos.
 
@@ -194,7 +185,7 @@ O coordinator seleciona os vector stores mais relevantes baseado na análise da 
 - SEFAZ-SP NFC-e
 - SEFAZ-MG NF-e
 
-#### 4.2. Classificador de Documentos (`tax-document-classifier`)
+#### 6.2. Classificador de Documentos (`tax-document-classifier`)
 
 **Responsabilidade**: Decidir para qual vector store cada documento deve ser enviado.
 
@@ -227,18 +218,11 @@ O coordinator seleciona os vector stores mais relevantes baseado na análise da 
 }
 ```
 
-**Heurísticas de Classificação** (Fallback quando metadados do crawler não estão disponíveis):
-- Títulos com "NT", "Nota Técnica" + domínio → `normas-tecnicas-{domain}` (nfe/nfce/cte)
-- Títulos com "Manual", "MOC" + domínio → `manuais-{domain}` (nfe/nfce/cte)
-- Títulos com "schema", "XML", "XSD" + domínio → `esquemas-xml-{domain}` (nfe/nfce/cte)
-- Títulos com "Lei Complementar", "LC", "Decreto" (nacional) → `legislacao-nacional-ibs-cbs-is`
-- CONFAZ, Ajustes SINIEF, convênios → `ajustes-sinief-{domain}` ou `convenios-icms`
-- "Parecer", "Solução de Consulta", "Acórdão" → `jurisprudencia-tributaria`
-- Tabelas (CFOP, NCM, etc.) → `tabelas-{tipo}` (cfop, ncm, aliquotas, etc.)
+**Heurísticas de Classificação** (Fallback): retornam um dos **12 store ids** (ex.: `vs_specs_mercadorias`, `vs_schemas_xsd`, `vs_legal_confaz`). Ids legados são mapeados para os novos em `maintenance.ts` (`LEGACY_TO_NEW_STORE_ID`).
 
 **Nota**: O classifier usa agente LLM primeiro, que considera metadados do crawler quando disponíveis. As heurísticas são usadas apenas como fallback.
 
-#### 4.3. Uploader de Documentos (`tax-document-uploader`)
+#### 6.3. Uploader de Documentos (`tax-document-uploader`)
 
 **Responsabilidade**: Baixar, armazenar e catalogar documentos fiscais.
 
@@ -265,19 +249,7 @@ Os vector stores são repositórios de conhecimento especializados definidos em 
 
 ### Resumo
 
-O sistema utiliza **30+ vector stores** organizados nas seguintes categorias:
-
-- **Tabelas** (compartilhadas e específicas): CFOP, NCM, meios de pagamento, alíquotas, códigos, IBS/CBS
-- **Normas Técnicas** (por documento): NF-e, NFC-e, CT-e
-- **Manuais** (por documento): NF-e, NFC-e, CT-e
-- **Informes Técnicos** (por documento): NF-e, NFC-e, CT-e
-- **Schemas XML** (por documento): NF-e, NFC-e, CT-e
-- **Ajustes SINIEF**: específicos por documento e gerais
-- **CONFAZ**: convênios ICMS e atos COTEPE
-- **Legislação**: nacional (IBS/CBS/IS) e documentos estaduais
-- **Jurisprudência**: pareceres e decisões tributárias
-
-Cada vector store é otimizado para um tipo específico de conteúdo e é consultado via `file-search` pelos agentes conforme a natureza da consulta.
+O sistema utiliza **12 vector stores** por capacidade/família (ver [docs/VECTOR_STORES.md](VECTOR_STORES.md)): specs (mercadorias, transporte, utilities, plataformas, declaracoes), schemas XSD, legal (federal, confaz, estados), jurisprudência, tabelas fiscais, changelog normativo. O coordinator delega a triage-router, source-planner e especialistas (spec-mercadorias, spec-transporte, legislacao-ibs-cbs), que consultam os stores via `file-search`.
 
 ## Ferramentas MCP (Model Context Protocol)
 
@@ -385,27 +357,18 @@ As seguintes funcionalidades são implementadas diretamente no código e **não*
 flowchart TD
     A[Usuário: POST /query] --> B[runUserQueryWorkflow]
     B --> C[invokeCoordinator]
-    C --> D{Análise de Domínio}
-    D --> E[Consulta file-search]
-    E --> F[Plano de Execução]
-    F --> G{pickSpecialists}
-    G --> H[specialist-nfe]
-    G --> I[specialist-nfce]
-    G --> J[specialist-cte]
-    G --> K[legislacao-ibs-cbs]
-    H --> L[Consolidação de Respostas]
-    I --> L
-    J --> L
-    K --> L
-    L --> M[Resposta com sources e traces]
+    C --> D[Handoffs: triage-router, source-planner, spec-mercadorias, spec-transporte, legislacao-ibs-cbs]
+    D --> E[Consulta file-search nos 12 stores]
+    E --> F[Consolidação de Respostas]
+    F --> G[Resposta com sources e traces]
 ```
 
 **Etapas**:
 1. Usuário envia pergunta via `POST /query`
 2. `runUserQueryWorkflow()` é acionado
 3. `invokeCoordinator()` analisa a pergunta e consulta `file-search`
-4. `pickSpecialists()` identifica especialistas necessários (heurística baseada em keywords)
-5. Especialistas são acionados (se necessário)
+4. Coordinator pode acionar triage-router, source-planner e especialistas (spec-mercadorias, spec-transporte, legislacao-ibs-cbs) via handoffs
+5. pickSpecialists() (workflow) identifica especialistas para plano/traces (heurística por keywords)
 6. Resposta consolidada retorna com:
    - `answer`: Resposta final
    - `plan`: Plano de execução
@@ -1230,9 +1193,10 @@ flowchart TB
     
     subgraph "Agentes"
         E[coordinator]
-        F[specialist-nfe]
-        G[specialist-nfce]
-        H[specialist-cte]
+        T[triage-router]
+        S[source-planner]
+        F[spec-mercadorias]
+        H[spec-transporte]
         I[legislacao-ibs-cbs]
         J[tax-portal-watcher]
         K[tax-document-classifier]
@@ -1259,8 +1223,9 @@ flowchart TB
     A --> C
     B --> D
     C --> E
+    E --> T
+    E --> S
     E --> F
-    E --> G
     E --> H
     E --> I
     D --> J
@@ -1270,9 +1235,9 @@ flowchart TB
     E --> M
     E --> N
     F --> M
-    G --> M
     H --> M
     I --> M
+    T --> R
     J --> O
     J --> Q
     K --> R

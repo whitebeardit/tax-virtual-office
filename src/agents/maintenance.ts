@@ -125,19 +125,52 @@ export async function watchPortals(): Promise<PortalDocument[]> {
   return discovered;
 }
 
+/** Mapeamento id legado → id novo (12 stores). */
+const LEGACY_TO_NEW_STORE_ID: Record<string, string> = {
+  "normas-tecnicas-nfe": "vs_specs_mercadorias",
+  "manuais-nfe": "vs_specs_mercadorias",
+  "informes-tecnicos-nfe": "vs_specs_mercadorias",
+  "esquemas-xml-nfe": "vs_schemas_xsd",
+  "ajustes-sinief-nfe": "vs_specs_mercadorias",
+  "normas-tecnicas-cte": "vs_specs_transporte",
+  "manuais-cte": "vs_specs_transporte",
+  "informes-tecnicos-cte": "vs_specs_transporte",
+  "esquemas-xml-cte": "vs_schemas_xsd",
+  "tabelas-cfop": "vs_tabelas_fiscais",
+  "tabelas-ncm": "vs_tabelas_fiscais",
+  "tabelas-meios-pagamento": "vs_tabelas_fiscais",
+  "tabelas-aliquotas": "vs_tabelas_fiscais",
+  "tabelas-codigos": "vs_tabelas_fiscais",
+  "tabelas-ibc-cbs": "vs_tabelas_fiscais",
+  "tabelas-nfe-especificas": "vs_tabelas_fiscais",
+  "convenios-icms": "vs_legal_confaz",
+  "atos-cotepe": "vs_legal_confaz",
+  "legislacao-nacional-ibs-cbs-is": "vs_legal_federal",
+  "documentos-estaduais-ibc-cbs": "vs_legal_estados",
+  "jurisprudencia-tributaria": "vs_jurisprudencia",
+  "documentos-bpe": "vs_specs_transporte",
+  "documentos-nf3e": "vs_specs_utilities",
+  "documentos-dce": "vs_specs_declaracoes",
+  "documentos-nfgas": "vs_specs_utilities",
+  "documentos-nff": "vs_specs_plataformas",
+  "documentos-nfag": "vs_specs_utilities",
+  "documentos-nfcom": "vs_specs_utilities",
+  "documentos-one": "vs_specs_plataformas",
+  "documentos-nfeab": "vs_specs_plataformas",
+  "documentos-pes": "vs_specs_plataformas",
+  "documentos-difal": "vs_specs_plataformas",
+  "documentos-cff": "vs_specs_plataformas",
+  "documentos-diversos": "vs_specs_mercadorias",
+};
+
 /**
- * Tenta mapear um vectorStoreId inválido para um válido, preservando o intento do agente.
- * Ex.: esquemas-xml-nfgas (inexistente) → documentos-nfgas (existente).
+ * Tenta mapear um vectorStoreId inválido (legado) para um dos 12 ids válidos.
  */
 function tryMapInvalidVectorStoreId(invalidId: string): string | null {
-  const esquemasMatch = invalidId.match(/^esquemas-xml-(.+)$/i);
-  if (esquemasMatch) {
-    const domain = esquemasMatch[1];
-    const documentosId = `documentos-${domain}`;
-    if (isValidVectorStoreId(documentosId)) {
-      return documentosId;
-    }
-  }
+  const mapped = LEGACY_TO_NEW_STORE_ID[invalidId];
+  if (mapped && isValidVectorStoreId(mapped)) return mapped;
+  if (invalidId.startsWith("esquemas-xml-") && isValidVectorStoreId("vs_schemas_xsd")) return "vs_schemas_xsd";
+  if (invalidId.startsWith("documentos-") && isValidVectorStoreId("vs_specs_mercadorias")) return "vs_specs_mercadorias";
   return null;
 }
 
@@ -267,35 +300,32 @@ function buildClassifierPrompt(document: PortalDocument): string {
   parts.push(`\nTítulo: ${document.title}`);
   parts.push(`URL: ${document.url}`);
   parts.push(`Portal ID: ${document.portalId}`);
-  
   if (document.portalType) {
     parts.push(`Tipo de Portal: ${document.portalType}`);
   }
-  
   if (document.publishedAt) {
     parts.push(`Data de Publicação: ${document.publishedAt}`);
   }
 
-  // Metadados do crawler (quando disponíveis)
-  if (document.domain) {
-    parts.push(`\nMetadados do Crawler:`);
-    parts.push(`- Domain: ${document.domain}`);
+  // Domínio e categoria (natureza) do crawler — use como sinal principal
+  if (document.domain || document.natureza) {
+    parts.push(`\n--- Domínio e Categoria (use como sinal principal) ---`);
+    parts.push(`Domain: ${document.domain ?? "(não informado)"}`);
+    parts.push(`Natureza (categoria): ${document.natureza ?? "(não informado)"}`);
+    if (document.natureza === "ESQUEMA_XML" || document.natureza === "SCHEMA_XML") {
+      parts.push("→ Documento é schema XML/XSD; priorize vs_schemas_xsd com alta confiança.");
+    }
+    parts.push("---");
   }
-  
-  if (document.natureza) {
-    parts.push(`- Natureza: ${document.natureza}`);
-  }
-  
+
   if (document.assuntos && document.assuntos.length > 0) {
-    parts.push(`- Assuntos: ${document.assuntos.join(", ")}`);
+    parts.push(`Assuntos: ${document.assuntos.join(", ")}`);
   }
-  
   if (document.fileName) {
-    parts.push(`- Nome do Arquivo: ${document.fileName}`);
+    parts.push(`Nome do Arquivo: ${document.fileName}`);
   }
-  
   if (document.modelo) {
-    parts.push(`- Modelo: ${document.modelo}`);
+    parts.push(`Modelo: ${document.modelo}`);
   }
 
   // Amostra do conteúdo normalizado (quando disponível)
@@ -688,184 +718,127 @@ function scoreVectorStores(document: PortalDocument) {
 
     // Heurísticas baseadas em padrões genéricos (sem IDs hardcoded)
 
-    // 0. Natureza ESQUEMA_XML + domínio DFe → preferir esquemas-xml-{domain}
-    if (document.natureza === "ESQUEMA_XML" && effectiveDomain && DFE_DOMAINS_WITH_SCHEMAS.includes(effectiveDomain)) {
-      if (storeId === `esquemas-xml-${effectiveDomain}`) {
-        score += 5;
-        rationale.push(`Natureza ESQUEMA_XML e domain ${effectiveDomain} → esquemas-xml-${effectiveDomain}.`);
-      } else if (storeId === `documentos-${effectiveDomain}`) {
-        score += 3;
-        rationale.push(`Natureza ESQUEMA_XML e domain ${effectiveDomain} → fallback documentos-${effectiveDomain}.`);
+    // 0. Natureza ESQUEMA_XML ou SCHEMA_XML (categoria Schemas) → vs_schemas_xsd (prioridade máxima)
+    const isSchemaNatureza =
+      document.natureza === "ESQUEMA_XML" || document.natureza === "SCHEMA_XML";
+    if (isSchemaNatureza) {
+      if (storeId === "vs_schemas_xsd") {
+        score += 8;
+        rationale.push(`Natureza ${document.natureza} (categoria Schemas) → vs_schemas_xsd.`);
+      }
+      if (
+        effectiveDomain &&
+        DFE_DOMAINS_WITH_SCHEMAS.includes(effectiveDomain) &&
+        storeId.includes("vs_specs_") &&
+        (effectiveDomain === "nfe" || effectiveDomain === "nfce")
+      ) {
+        score += 1;
+        rationale.push(`Domain ${effectiveDomain} como contexto secundário.`);
       }
     }
 
-    // 0b. NFGas no título (PL_NFGas, etc.) ou URL → esquemas-xml-nfgas ou documentos-nfgas
-    if (
-      normalizedTitle.includes("nfgas") ||
-      normalizedTitle.includes("nf gas") ||
-      normalizedUrl.includes("/nfgas")
-    ) {
-      if (storeId.includes("esquemas-xml-nfgas")) {
+    // 1. Match por família/domain (12 stores)
+    const domainToSpecsStore: Record<string, string> = {
+      nfe: "vs_specs_mercadorias",
+      nfce: "vs_specs_mercadorias",
+      cte: "vs_specs_transporte",
+      mdfe: "vs_specs_transporte",
+      bpe: "vs_specs_transporte",
+      nf3e: "vs_specs_utilities",
+      nfcom: "vs_specs_utilities",
+      nfgas: "vs_specs_utilities",
+      nfag: "vs_specs_utilities",
+      dce: "vs_specs_declaracoes",
+      nff: "vs_specs_plataformas",
+      pes: "vs_specs_plataformas",
+      cff: "vs_specs_plataformas",
+      one: "vs_specs_plataformas",
+      nfeab: "vs_specs_plataformas",
+      difal: "vs_specs_plataformas",
+    };
+    if (effectiveDomain && storeId === domainToSpecsStore[effectiveDomain]) {
+      score += 5;
+      rationale.push(`Domain ${effectiveDomain} → ${storeId}.`);
+    }
+    if ((normalizedTitle.includes("nf-e") || normalizedTitle.includes("nfe") || normalizedUrl.includes("/nfe")) && storeId === "vs_specs_mercadorias") {
+      score += 5;
+      rationale.push("Título/URL menciona NF-e → vs_specs_mercadorias.");
+    }
+    if ((normalizedTitle.includes("nfce") || normalizedUrl.includes("/nfce")) && storeId === "vs_specs_mercadorias") {
+      score += 5;
+      rationale.push("Título/URL menciona NFC-e → vs_specs_mercadorias.");
+    }
+    if ((normalizedTitle.includes("ct-e") || normalizedTitle.includes("cte") || normalizedUrl.includes("/cte")) && storeId === "vs_specs_transporte") {
+      score += 5;
+      rationale.push("Título/URL menciona CT-e → vs_specs_transporte.");
+    }
+
+    // 2. Match por natureza/artifact
+    if (normalizedTitle.includes("nota técnica") || normalizedTitle.includes("nt ") || normalizedUrl.includes("/nt/") || document.natureza === "NOTA_TECNICA") {
+      if (storeId.includes("vs_specs_")) {
         score += 4;
-        rationale.push("Título/URL menciona NFGas e store é de esquemas NFGas.");
-      } else if (storeId.includes("documentos-nfgas")) {
+        rationale.push("Documento é Nota Técnica → vs_specs_*.");
+      }
+    }
+    if (normalizedTitle.includes("manual") || normalizedTitle.includes("moc") || normalizedUrl.includes("/manual/") || document.natureza === "MANUAL") {
+      if (storeId.includes("vs_specs_")) {
         score += 4;
-        rationale.push("Título/URL menciona NFGas e store é de documentos NFGas.");
+        rationale.push("Documento é Manual → vs_specs_*.");
       }
     }
-
-    // 1. Match por tipo de documento no ID do store
-    if (normalizedTitle.includes("nf-e") || normalizedTitle.includes("nfe") || normalizedUrl.includes("/nfe")) {
-      if (storeId.includes("nfe") && !storeId.includes("nfce")) {
+    if (normalizedTitle.includes("tabela") || normalizedUrl.includes("/tabela/") || document.natureza === "TABELA") {
+      if (storeId === "vs_tabelas_fiscais") {
         score += 5;
-        rationale.push("Título/URL menciona NF-e e store é específico para NF-e.");
+        rationale.push("Documento é Tabela → vs_tabelas_fiscais.");
       }
     }
-
-    if (normalizedTitle.includes("nfce") || normalizedTitle.includes("nfc-e") || normalizedUrl.includes("/nfce")) {
-      if (storeId.includes("nfce")) {
-        score += 5;
-        rationale.push("Título/URL menciona NFC-e e store é específico para NFC-e.");
-      }
-    }
-
-    if (normalizedTitle.includes("ct-e") || normalizedTitle.includes("cte") || normalizedUrl.includes("/cte")) {
-      if (storeId.includes("cte")) {
-        score += 5;
-        rationale.push("Título/URL menciona CT-e e store é específico para CT-e.");
-      }
-    }
-
-    // Match por domínios SVRS (documentos-* e esquemas-xml-*)
-    const domainStoreMap: Array<{ path: string; storePrefix: string; schemaPrefix?: string }> = [
-      { path: "/bpe", storePrefix: "documentos-bpe", schemaPrefix: "esquemas-xml-bpe" },
-      { path: "/nf3e", storePrefix: "documentos-nf3e", schemaPrefix: "esquemas-xml-nf3e" },
-      { path: "/dce", storePrefix: "documentos-dce", schemaPrefix: "esquemas-xml-dce" },
-      { path: "/nfgas", storePrefix: "documentos-nfgas", schemaPrefix: "esquemas-xml-nfgas" },
-      { path: "/cff", storePrefix: "documentos-cff", schemaPrefix: "esquemas-xml-cff" },
-      { path: "/nff", storePrefix: "documentos-nff", schemaPrefix: "esquemas-xml-nff" },
-      { path: "/nfag", storePrefix: "documentos-nfag", schemaPrefix: "esquemas-xml-nfag" },
-      { path: "/pes", storePrefix: "documentos-pes", schemaPrefix: "esquemas-xml-pes" },
-      { path: "/nfcom", storePrefix: "documentos-nfcom", schemaPrefix: "esquemas-xml-nfcom" },
-      { path: "/one", storePrefix: "documentos-one", schemaPrefix: "esquemas-xml-one" },
-      { path: "/nfabi", storePrefix: "documentos-nfeab", schemaPrefix: "esquemas-xml-nfeab" },
-      { path: "/difal", storePrefix: "documentos-difal", schemaPrefix: "esquemas-xml-difal" },
-    ];
-    for (const { path, storePrefix, schemaPrefix } of domainStoreMap) {
-      if (normalizedUrl.includes(path) && (storeId.includes(storePrefix) || (schemaPrefix && storeId.includes(schemaPrefix)))) {
-        score += 5;
-        rationale.push(`URL do portal SVRS ${path} e store ${storePrefix}/${schemaPrefix ?? ""}.`);
-        break;
-      }
-    }
-
-    // Match por effectiveDomain (URL ou document.domain) quando disponível
-    if (effectiveDomain) {
-      const domainToStore: Record<string, string> = {
-        bpe: "documentos-bpe",
-        nf3e: "documentos-nf3e",
-        dce: "documentos-dce",
-        nfgas: "documentos-nfgas",
-        cff: "documentos-cff",
-        nff: "documentos-nff",
-        nfag: "documentos-nfag",
-        pes: "documentos-pes",
-        nfcom: "documentos-nfcom",
-        one: "documentos-one",
-        nfeab: "documentos-nfeab",
-        difal: "documentos-difal",
-      };
-      const expectedStore = domainToStore[effectiveDomain];
-      if (expectedStore && (storeId.includes(expectedStore) || storeId.includes(`esquemas-xml-${effectiveDomain}`))) {
-        score += 5;
-        rationale.push(`Domain ${effectiveDomain} mapeia para ${expectedStore} ou esquemas-xml-${effectiveDomain}.`);
-      }
-    }
-
-    // 2. Match por natureza do documento
-    if (normalizedTitle.includes("nota técnica") || normalizedTitle.includes("nt ") || normalizedUrl.includes("/nt/")) {
-      if (storeId.includes("normas-tecnicas")) {
+    if (normalizedTitle.includes("informe") || normalizedTitle.includes("comunicado") || document.natureza === "INFORME_TECNICO") {
+      if (storeId.includes("vs_specs_")) {
         score += 4;
-        rationale.push("Documento é Nota Técnica e store é de normas técnicas.");
+        rationale.push("Documento é Informe → vs_specs_*.");
       }
     }
-
-    if (normalizedTitle.includes("manual") || normalizedTitle.includes("moc") || normalizedUrl.includes("/manual/")) {
-      if (storeId.includes("manual")) {
-        score += 4;
-        rationale.push("Documento é Manual e store é de manuais.");
-      }
-    }
-
-    if (normalizedTitle.includes("tabela") || normalizedUrl.includes("/tabela/")) {
-      if (storeId.includes("tabela")) {
-        score += 4;
-        rationale.push("Documento é Tabela e store é de tabelas.");
-      }
-    }
-
-    if (normalizedTitle.includes("informe") || normalizedTitle.includes("comunicado") || normalizedUrl.includes("/informe/")) {
-      if (storeId.includes("informe")) {
-        score += 4;
-        rationale.push("Documento é Informe Técnico e store é de informes.");
-      }
-    }
-
     if (
       document.natureza === "ESQUEMA_XML" ||
+      document.natureza === "SCHEMA_XML" ||
       normalizedTitle.includes("schema") ||
       normalizedTitle.includes("xsd") ||
-      normalizedUrl.includes("/schema/") ||
       normalizedUrl.includes(".xsd")
     ) {
-      if (storeId.includes("esquema") || storeId.includes("xml")) {
+      if (storeId === "vs_schemas_xsd") {
+        score += 5;
+        rationale.push("Documento é Schema XML (natureza ou título/URL) → vs_schemas_xsd.");
+      }
+    }
+    if (normalizedTitle.includes("ajuste") || normalizedTitle.includes("sinief") || document.natureza === "AJUSTE_SINIEF") {
+      if (storeId === "vs_legal_confaz") {
+        score += 5;
+        rationale.push("Documento é Ajuste SINIEF → vs_legal_confaz.");
+      }
+    }
+    if (normalizedTitle.includes("convênio") || normalizedTitle.includes("convenio") || document.natureza === "CONVENIO") {
+      if (storeId === "vs_legal_confaz") {
+        score += 5;
+        rationale.push("Documento é Convênio → vs_legal_confaz.");
+      }
+    }
+    if (normalizedTitle.includes("ato") || normalizedTitle.includes("cotepe") || document.natureza === "ATO_COTEPE") {
+      if (storeId === "vs_legal_confaz") {
+        score += 5;
+        rationale.push("Documento é Ato COTEPE → vs_legal_confaz.");
+      }
+    }
+    if (effectiveDomain === "confaz") {
+      if (storeId === "vs_legal_confaz" || storeId === "vs_legal_federal" || storeId === "vs_legal_estados") {
         score += 4;
-        rationale.push("Documento é Schema XML (natureza ou título/URL) e store é de esquemas XML.");
+        rationale.push("Domain confaz → vs_legal_*.");
       }
     }
 
-    if (normalizedTitle.includes("ajuste") || normalizedTitle.includes("sinief") || normalizedUrl.includes("/ajuste/")) {
-      if (storeId.includes("ajuste") || storeId.includes("sinief")) {
-        score += 4;
-        rationale.push("Documento é Ajuste SINIEF e store é de ajustes.");
-      }
-    }
-
-    if (normalizedTitle.includes("convênio") || normalizedTitle.includes("convenio") || normalizedUrl.includes("/convenio/")) {
-      if (storeId.includes("convenio")) {
-        score += 4;
-        rationale.push("Documento é Convênio e store é de convênios.");
-      }
-    }
-
-    if (normalizedTitle.includes("ato") || normalizedTitle.includes("cotepe") || normalizedUrl.includes("/ato/")) {
-      if (storeId.includes("ato") || storeId.includes("cotepe")) {
-        score += 4;
-        rationale.push("Documento é Ato COTEPE e store é de atos.");
-      }
-    }
-
-    // 3. Match por tipo de portal
-    if (portalType === "estadual") {
-      if (storeId.includes("estadual") || storeDescription.includes("estadual")) {
-        score += 3;
-        rationale.push("Portal estadual e store é para documentos estaduais.");
-      }
-    }
-
-    if (portalType === "nacional") {
-      if (storeId.includes("nacional") || storeDescription.includes("nacional")) {
-        score += 2;
-        rationale.push("Portal nacional e store é para documentos nacionais.");
-      }
-    }
-
-    // 4. Match por descrição do store
+    // 3. Match por descrição do store
     if (storeDescription.includes(portalType)) {
       score += 1;
     }
-
-    // 5. Match genérico por palavras-chave na descrição
     const titleKeywords = normalizedTitle.split(/\s+/);
     for (const keyword of titleKeywords) {
       if (keyword.length > 3 && storeDescription.includes(keyword)) {

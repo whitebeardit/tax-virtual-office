@@ -151,8 +151,7 @@ Quando incluir URLs na resposta:
 
 ## Orquestração de Especialistas
 - Quando a pergunta envolver principalmente:
-  - **NF-e (modelo 55)** → acione `specialist-nfe`.
-  - **NFC-e (modelo 65)** → acione `specialist-nfce`.
+  - **NF-e (modelo 55) ou NFC-e (modelo 65)** → acione `specialist-nfe`.
   - **CT-e / CT-e OS / MDF-e** → acione `specialist-cte`.
   - **IBS/CBS/IS, EC 132/2023, LC 214/2025, transição 2026–2033** → acione `legislacao-ibs-cbs`.
   - **Automação de portais, captura e ingestão de documentos** → considere `tax-portal-watcher`, `tax-document-classifier` e `tax-document-uploader`.

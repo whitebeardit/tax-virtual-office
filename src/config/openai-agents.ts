@@ -17,10 +17,18 @@ import {
   coordinatorTools,
   specialistTools,
   classifierTools,
+  triageRouterTools,
+  sourcePlannerTools,
 } from "../agents/tools.js";
 
 // Cache de agentes para evitar recriação
 const agentCache = new Map<AgentId, Agent>();
+
+function getToolsForAgent(agentId: AgentId): any[] {
+  if (agentId === "triage-router") return triageRouterTools;
+  if (agentId === "source-planner") return sourcePlannerTools;
+  return specialistTools;
+}
 
 /**
  * Cria uma instância de Agent do OpenAI Agents SDK
@@ -49,11 +57,12 @@ export function createOpenAIAgent(agentId: AgentId): Agent {
     // Coordinator tem file-search, web e logger
     tools = coordinatorTools;
     
-    // Configurar handoffs para especialistas
+    // Configurar handoffs: triage/router, source planner e especialistas por capacidade
     const specialistIds: AgentId[] = [
-      "specialist-nfe",
-      "specialist-nfce",
-      "specialist-cte",
+      "triage-router",
+      "source-planner",
+      "spec-mercadorias",
+      "spec-transporte",
       "legislacao-ibs-cbs",
     ];
 
@@ -65,11 +74,10 @@ export function createOpenAIAgent(agentId: AgentId): Agent {
       });
     });
   } else if (agentId === "tax-document-classifier") {
-    // Classifier tem vector-stores-metadata e logger
     tools = classifierTools;
   } else {
-    // Especialistas têm apenas file-search e logger
-    tools = specialistTools;
+    // Especialistas, triage, source-planner: tools por agente
+    tools = getToolsForAgent(agentId);
   }
 
   // Criar agente com o Agents SDK
@@ -99,12 +107,13 @@ function createSpecialistAgent(agentId: AgentId): Agent {
   }
 
   const definition = getAgentDefinition(agentId);
+  const tools = getToolsForAgent(agentId);
 
   const agent = new Agent({
     name: definition.name,
     instructions: definition.instructions,
     model: definition.model,
-    tools: specialistTools,
+    tools,
   });
 
   // Cachear

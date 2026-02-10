@@ -78,6 +78,6 @@ describe('User Query Workflow', () => {
     const result = await runUserQueryWorkflow(request);
 
     const planString = result.plan?.join(' ') || '';
-    expect(planString).toContain('specialist-nfce');
+    expect(planString).toContain('spec-mercadorias');
   });
 });

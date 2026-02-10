@@ -1,6 +1,9 @@
 export type AgentId =
   | "coordinator"
-  | "specialist-nfce"
+  | "triage-router"
+  | "source-planner"
+  | "spec-mercadorias"
+  | "spec-transporte"
   | "specialist-nfe"
   | "specialist-cte"
   | "legislacao-ibs-cbs"

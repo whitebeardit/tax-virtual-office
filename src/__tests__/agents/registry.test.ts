@@ -20,9 +20,10 @@ describe('Agent Registry', () => {
 
   it('should load specialist agent definitions', () => {
     const specialistIds: AgentId[] = [
-      'specialist-nfce',
-      'specialist-nfe',
-      'specialist-cte',
+      'triage-router',
+      'source-planner',
+      'spec-mercadorias',
+      'spec-transporte',
       'legislacao-ibs-cbs',
     ];
 

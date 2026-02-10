@@ -8,16 +8,39 @@ agents:
       - web
       - logger
 
-  - id: specialist-nfce
-    name: NFC-e Specialist
+  - id: triage-router
+    name: Triage / Router
     model: gpt-5.1
-    instructions_file: ./prompts/specialist-nfce.system.md
+    instructions_file: ./prompts/triage-router.system.md
+    tools:
+      - vector-stores-metadata
+      - logger
+
+  - id: source-planner
+    name: Source Planner
+    model: gpt-5.1
+    instructions_file: ./prompts/source-planner.system.md
+    tools:
+      - logger
+
+  - id: spec-mercadorias
+    name: Spec Mercadorias (NF-e / NFC-e)
+    model: gpt-5.1
+    instructions_file: ./prompts/spec-mercadorias.system.md
+    tools:
+      - file-search
+      - logger
+
+  - id: spec-transporte
+    name: Spec Transporte (CT-e / MDF-e / BP-e)
+    model: gpt-5.1
+    instructions_file: ./prompts/spec-transporte.system.md
     tools:
       - file-search
       - logger
 
   - id: specialist-nfe
-    name: NF-e Specialist
+    name: NF-e / NFC-e Specialist
     model: gpt-5.1
     instructions_file: ./prompts/specialist-nfe.system.md
     tools:
