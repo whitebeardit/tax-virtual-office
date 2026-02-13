@@ -70,39 +70,13 @@ Configure as seguintes variáveis no arquivo `.env`:
 - `MONGODB_URI` (obrigatória): URI de conexão MongoDB. Usa o mesmo banco que `tax-agent-hub`; collections com prefixo `tvo-` (ex: `tvo-portal-state`). Exemplo: `mongodb://localhost:27017/tax-agent-hub`.
 - `APP_MODE` (opcional): Modo de execução - `api` ou `daily-portals-scan`. Padrão: `api`.
 - `PORT` (opcional): Porta do servidor HTTP. Padrão: `3000`.
-- `TAX_AGENT_HUB_URL` (opcional): URL da API do `tax-agent-hub` (ex: `http://localhost:3001`). Quando configurado, schemaLookupTool e vectorStoreMapping consomem dados via API.
-- `TAX_AGENT_HUB_PATH` (opcional): Caminho para o diretório do `tax-agent-hub` (fallback quando TAX_AGENT_HUB_URL não configurado).
+- `TAX_AGENT_HUB_URL` (obrigatória para schema lookup e vector store mapping): URL da API do `tax-agent-hub` (ex: `http://localhost:3001`). Os dados de índice de schemas e mapeamentos vêm exclusivamente da API (MongoDB). Sem esta URL, as tools retornam vazio e registram um aviso.
 
-### TAX_AGENT_HUB_URL e TAX_AGENT_HUB_PATH
+### TAX_AGENT_HUB_URL
 
-Estas variáveis são usadas para acessar recursos do `tax-agent-hub`, incluindo:
-- Índice de schemas XSD: `{TAX_AGENT_HUB_PATH}/upload/{domain}/schema-index.json`
-- Status de upload: `{TAX_AGENT_HUB_PATH}/upload/{domain}/upload-status.json`
+Obrigatória para que as tools `schemaLookupTool` e `vectorStoreMapping` funcionem: elas consomem índice de schemas XSD e mapeamentos de vector stores via API do tax-agent-hub, que lê do MongoDB. Configure a URL e mantenha a API do tax-agent-hub rodando (`npm run start:api` no tax-agent-hub). O índice de schemas é gerado e persistido no Mongo pelo tax-agent-hub (ex.: script `generate:schema-index`).
 
-**Quando configurar:**
-
-- **API (recomendado)**: Configure `TAX_AGENT_HUB_URL=http://localhost:3001` e inicie a API do tax-agent-hub com `npm run start:api`.
-- **Arquivos locais**: Configure `TAX_AGENT_HUB_PATH` ou use caminho relativo `../tax-agent-hub` como fallback.
-  ```bash
-  TAX_AGENT_HUB_PATH=/caminho/absoluto/para/tax-agent-hub
-  ```
-
-- **Máquinas diferentes**: **OBRIGATÓRIO**. Configure com caminho absoluto ou caminho de rede compartilhado.
-  ```bash
-  # Exemplo: NFS ou mount compartilhado
-  TAX_AGENT_HUB_PATH=/mnt/shared/tax-agent-hub
-  
-  # Exemplo: Caminho absoluto em servidor remoto
-  TAX_AGENT_HUB_PATH=/home/user/tax-agent-hub
-  ```
-
-**Nota**: O `tax-agent-hub` deve gerar o índice de schemas executando:
-```bash
-cd tax-agent-hub
-npm run generate:schema-index
-```
-
-Isso cria os arquivos `schema-index.json` em `upload/{domain}/` que são necessários para a tool `schema-lookup`.
+Exemplo: `TAX_AGENT_HUB_URL=http://localhost:3001`
 
 Veja `.env.example` para um template completo.
 

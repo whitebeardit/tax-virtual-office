@@ -24,23 +24,11 @@ export const env = {
   port: Number(process.env.PORT || 3000),
   openAiApiKey: process.env.OPENAI_API_KEY || "",
   /**
-   * URL da API do tax-agent-hub (ex: http://localhost:3001)
+   * URL da API do tax-agent-hub (ex: http://localhost:3001).
    *
-   * Quando configurado, schemaLookupTool e vectorStoreMapping consomem dados via API
-   * em vez de ler arquivos locais. Prioridade sobre TAX_AGENT_HUB_PATH.
+   * Obrigatória para schemaLookupTool e vectorStoreMapping: os dados de índice de schemas
+   * e mapeamentos de vector stores vêm exclusivamente da API do tax-agent-hub (MongoDB).
+   * Sem esta URL, as tools retornam vazio e registram um aviso.
    */
   taxAgentHubUrl: process.env.TAX_AGENT_HUB_URL,
-  /**
-   * Caminho para o diretório do tax-agent-hub
-   *
-   * Usado quando TAX_AGENT_HUB_URL não está configurado (fallback para arquivos locais).
-   * - Índice de schemas: {taxAgentHubPath}/upload/{domain}/schema-index.json
-   * - Status de upload: {taxAgentHubPath}/upload/{domain}/upload-status.json
-   *
-   * Se não configurado, usa caminho relativo ../tax-agent-hub como fallback.
-   *
-   * **Importante**: Quando tax-agent-hub e tax-virtual-office estão em máquinas diferentes,
-   * use TAX_AGENT_HUB_URL com a URL da API em vez de TAX_AGENT_HUB_PATH.
-   */
-  taxAgentHubPath: process.env.TAX_AGENT_HUB_PATH,
 };

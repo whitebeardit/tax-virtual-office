@@ -1,19 +1,6 @@
-import * as fs from "fs/promises";
-import * as path from "path";
 import { logger } from "../utils/logger.js";
 import { env } from "../config/env.js";
 import { fetchUploadStatusMappings } from "../infrastructure/tax-agent-hub-client.js";
-
-interface UploadStatusFile {
-  collection?: string;
-  vector_store_id?: string;
-  arquivos?: Record<string, unknown>;
-}
-
-interface VectorStoreMapping {
-  collection: string;
-  vector_store_id: string;
-}
 
 // Cache em memória para mapeamentos
 let mappingsCache: Map<string, string> | null = null;
@@ -21,104 +8,28 @@ let cacheTimestamp: number = 0;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos
 
 /**
- * Obtém o caminho base do tax-agent-hub
- * 
- * Prioridade:
- * 1. TAX_AGENT_HUB_PATH (variável de ambiente via env.ts)
- * 2. Caminho relativo ../tax-agent-hub (fallback)
- * 
- * @returns Caminho absoluto para o diretório do tax-agent-hub
- */
-function getTaxAgentHubPath(): string {
-  // Usar env.taxAgentHubPath (vem de env.ts que já carrega .env)
-  const envPath = env.taxAgentHubPath;
-  
-  if (envPath) {
-    const resolvedPath = path.resolve(envPath);
-    return resolvedPath;
-  }
-  
-  // Caminho relativo padrão: ../tax-agent-hub
-  const currentDir = process.cwd();
-  const relativePath = path.resolve(currentDir, '..', 'tax-agent-hub');
-  return relativePath;
-}
-
-/**
- * Descobre domínios disponíveis no diretório upload/
- */
-async function discoverDomains(basePath: string): Promise<string[]> {
-  const uploadDir = path.join(basePath, 'upload');
-  
-  try {
-    const entries = await fs.readdir(uploadDir, { withFileTypes: true });
-    return entries
-      .filter(entry => entry.isDirectory())
-      .map(entry => entry.name);
-  } catch (error) {
-    logger.warn({ error, uploadDir }, 'Erro ao descobrir domínios');
-    return [];
-  }
-}
-
-/**
- * Carrega um arquivo upload-status.json
- */
-async function loadUploadStatus(domain: string, basePath: string): Promise<UploadStatusFile | null> {
-  const statusPath = path.join(basePath, 'upload', domain, 'upload-status.json');
-  
-  try {
-    const content = await fs.readFile(statusPath, 'utf-8');
-    return JSON.parse(content) as UploadStatusFile;
-  } catch (error) {
-    logger.debug({ error, statusPath }, 'Erro ao carregar upload-status.json');
-    return null;
-  }
-}
-
-/**
- * Carrega todos os mapeamentos disponíveis
- *
- * Se TAX_AGENT_HUB_URL configurado: busca via API.
- * Caso contrário: lê arquivos upload-status.json locais.
+ * Carrega todos os mapeamentos via API do tax-agent-hub (MongoDB).
+ * Se TAX_AGENT_HUB_URL não estiver configurado, retorna mapa vazio e registra aviso.
  */
 async function loadAllMappings(): Promise<Map<string, string>> {
-  // Prioridade: API quando TAX_AGENT_HUB_URL configurado
   const apiUrl = env.taxAgentHubUrl;
-  if (apiUrl) {
-    const entries = await fetchUploadStatusMappings(apiUrl);
-    const mappings = new Map<string, string>();
-    for (const e of entries) {
-      if (e.collection && e.vector_store_id) {
-        mappings.set(e.collection, e.vector_store_id);
-      }
-    }
-    logger.debug(
-      { source: "api", count: mappings.size },
-      "Mapeamentos carregados via API"
+  if (!apiUrl) {
+    logger.warn(
+      "TAX_AGENT_HUB_URL não configurado; mapeamentos de vector stores indisponíveis."
     );
-    return mappings;
+    return new Map<string, string>();
   }
-
-  // Fallback: arquivos locais
-  const basePath = getTaxAgentHubPath();
-  const domains = await discoverDomains(basePath);
+  const entries = await fetchUploadStatusMappings(apiUrl);
   const mappings = new Map<string, string>();
-
-  for (const domain of domains) {
-    const status = await loadUploadStatus(domain, basePath);
-    if (status?.collection && status?.vector_store_id) {
-      mappings.set(status.collection, status.vector_store_id);
-      logger.debug(
-        {
-          collection: status.collection,
-          vector_store_id: status.vector_store_id,
-        },
-        "Mapeamento carregado"
-      );
+  for (const e of entries) {
+    if (e.collection && e.vector_store_id) {
+      mappings.set(e.collection, e.vector_store_id);
     }
   }
-
+  logger.debug(
+    { source: "api", count: mappings.size },
+    "Mapeamentos carregados via API"
+  );
   return mappings;
 }
 

@@ -1,12 +1,10 @@
 /**
  * Tool para busca exata de schemas XSD por nome
- * 
- * Usa o índice de schemas gerado pelo tax-agent-hub para fazer busca exata
+ *
+ * Usa o índice de schemas do tax-agent-hub (MongoDB via API) para busca exata
  * antes de recorrer à busca semântica via file-search.
  */
 
-import * as fs from "fs/promises";
-import * as path from "path";
 import { logger } from "../utils/logger.js";
 import { env } from "../config/env.js";
 import { fetchSchemaIndex as fetchSchemaIndexFromApi } from "../infrastructure/tax-agent-hub-client.js";
@@ -35,48 +33,6 @@ interface SchemaIndex {
 }
 
 /**
- * Obtém o caminho base do tax-agent-hub
- * 
- * Prioridade:
- * 1. TAX_AGENT_HUB_PATH (variável de ambiente)
- * 2. Caminho relativo ../tax-agent-hub (fallback)
- * 
- * @returns Caminho absoluto para o diretório do tax-agent-hub
- * @throws Error se nenhum caminho válido for encontrado
- */
-function getTaxAgentHubPath(): string {
-  // Usar env.taxAgentHubPath (vem de env.ts que já carrega .env)
-  const envPath = env.taxAgentHubPath;
-  
-  if (envPath) {
-    const resolvedPath = path.resolve(envPath);
-    return resolvedPath;
-  }
-  
-  // Caminho relativo padrão: ../tax-agent-hub
-  const currentDir = process.cwd();
-  const relativePath = path.resolve(currentDir, '..', 'tax-agent-hub');
-  return relativePath;
-}
-
-/**
- * Valida se o caminho do tax-agent-hub existe e é acessível
- * 
- * @param basePath Caminho base do tax-agent-hub
- * @returns true se válido, false caso contrário
- */
-async function validateTaxAgentHubPath(basePath: string): Promise<boolean> {
-  try {
-    await fs.access(basePath);
-    const uploadDir = path.join(basePath, 'upload');
-    await fs.access(uploadDir);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Normaliza nome do schema para busca (remove variações)
  */
 function normalizeSchemaName(schemaName: string): string {
@@ -88,84 +44,28 @@ function normalizeSchemaName(schemaName: string): string {
 }
 
 /**
- * Carrega índice de schemas para um domínio
- *
- * Se TAX_AGENT_HUB_URL configurado: busca via API.
- * Caso contrário: lê arquivo local (TAX_AGENT_HUB_PATH).
+ * Carrega índice de schemas para um domínio via API do tax-agent-hub (MongoDB).
+ * Se TAX_AGENT_HUB_URL não estiver configurado, retorna null e registra aviso.
  *
  * @param domain Domínio a carregar (nfe, nfce, confaz, mdfe, other)
- * @returns SchemaIndex ou null se não encontrado
+ * @returns SchemaIndex ou null se não encontrado ou URL não configurada
  */
 async function loadSchemaIndex(domain: string): Promise<SchemaIndex | null> {
-  // Prioridade: API quando TAX_AGENT_HUB_URL configurado
   const apiUrl = env.taxAgentHubUrl;
-  if (apiUrl) {
-    const index = await fetchSchemaIndexFromApi(apiUrl, domain);
-    if (index) {
-      logger.debug(
-        { domain, source: "api", totalSchemas: index.total_schemas },
-        "Índice de schemas carregado via API"
-      );
-    }
-    return index as SchemaIndex | null;
-  }
-
-  // Fallback: arquivos locais
-  const basePath = getTaxAgentHubPath();
-  const indexPath = path.join(basePath, "upload", domain, "schema-index.json");
-
-  const isValid = await validateTaxAgentHubPath(basePath);
-  if (!isValid) {
-    const envPath = env.taxAgentHubPath;
-    if (!envPath) {
-      logger.warn(
-        {
-          basePath,
-          indexPath,
-          suggestion:
-            "Configure TAX_AGENT_HUB_PATH ou TAX_AGENT_HUB_URL no .env",
-        },
-        "TAX_AGENT_HUB_PATH não configurado e caminho relativo ../tax-agent-hub não encontrado"
-      );
-    } else {
-      logger.warn(
-        { basePath, indexPath, envPath },
-        "Caminho do tax-agent-hub configurado mas não é acessível"
-      );
-    }
-    return null;
-  }
-
-  try {
-    await fs.access(indexPath);
-    const content = await fs.readFile(indexPath, "utf-8");
-    const index = JSON.parse(content) as SchemaIndex;
-
-    logger.debug(
-      { domain, indexPath, totalSchemas: index.total_schemas },
-      "Índice de schemas carregado com sucesso"
+  if (!apiUrl) {
+    logger.warn(
+      "TAX_AGENT_HUB_URL não configurado; índice de schemas indisponível. Configure a URL da API do tax-agent-hub."
     );
-
-    return index;
-  } catch (error: unknown) {
-    const err = error as NodeJS.ErrnoException;
-    if (err.code === "ENOENT") {
-      logger.warn(
-        {
-          domain,
-          indexPath,
-          suggestion: `Execute 'npm run generate:schema-index' no tax-agent-hub para gerar o índice`,
-        },
-        `Índice de schemas não encontrado para domínio ${domain}`
-      );
-    } else {
-      logger.error(
-        { error, domain, indexPath },
-        "Erro ao carregar índice de schemas"
-      );
-    }
     return null;
   }
+  const index = await fetchSchemaIndexFromApi(apiUrl, domain);
+  if (index) {
+    logger.debug(
+      { domain, source: "api", totalSchemas: index.total_schemas },
+      "Índice de schemas carregado via API"
+    );
+  }
+  return index as SchemaIndex | null;
 }
 
 /**
@@ -283,11 +183,3 @@ export async function findRelatedSchemas(
   
   return results;
 }
-
-
-
-
-
-
-
-
