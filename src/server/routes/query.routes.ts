@@ -1,8 +1,14 @@
 import { Express, Request, Response } from "express";
-import { runUserQueryWorkflow } from "../../workflows/user-query.js";
+import { runUserQueryWorkflow, runUserQueryWorkflowStream } from "../../workflows/user-query.js";
+import type { WorkflowStreamEvent } from "../../workflows/user-query.js";
 import { validate } from "../../middleware/validation.js";
 import { userQueryRequestSchema } from "../schemas/query.schemas.js";
 import { logger } from "../../utils/logger.js";
+
+function writeSSE(res: Response, event: string, data: unknown): void {
+  const payload = typeof data === "string" ? data : JSON.stringify(data);
+  res.write(`event: ${event}\ndata: ${payload}\n\n`);
+}
 
 export function registerQueryRoutes(app: Express) {
   /**
@@ -92,6 +98,49 @@ export function registerQueryRoutes(app: Express) {
       } catch (err) {
         logger.error({ error: err }, "/query failed");
         res.status(500).json({ error: "internal_error" });
+      }
+    }
+  );
+
+  /**
+   * POST /query/stream — mesma entrada que /query, resposta em Server-Sent Events (step, thought, tool, agent, done).
+   */
+  app.post(
+    "/query/stream",
+    validate({ body: userQueryRequestSchema }),
+    async (req: Request, res: Response) => {
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.flushHeaders?.();
+
+      const onEvent = (event: WorkflowStreamEvent) => {
+        if (event.type === "step") {
+          writeSSE(res, "step", { step: event.step, label: event.label });
+        } else if (event.type === "thought") {
+          writeSSE(res, "thought", { delta: event.delta, text: event.delta });
+        } else if (event.type === "tool") {
+          writeSSE(res, "tool", { name: event.name, args: event.args });
+        } else if (event.type === "agent") {
+          writeSSE(res, "agent", { name: event.name });
+        } else if (event.type === "done") {
+          writeSSE(res, "done", {
+            answer: event.answer,
+            plan: event.plan,
+            sources: event.sources,
+            agentTraces: event.agentTraces,
+          });
+        }
+      };
+
+      try {
+        logger.info({ question: req.body.question }, "Processing user query (stream)");
+        await runUserQueryWorkflowStream(req.body, onEvent);
+        res.end();
+      } catch (err) {
+        logger.error({ error: err }, "/query/stream failed");
+        writeSSE(res, "error", { message: err instanceof Error ? err.message : "internal_error" });
+        res.end();
       }
     }
   );
