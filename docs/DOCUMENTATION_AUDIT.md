@@ -1,7 +1,27 @@
 # Auditoria de Documentação - Tax Virtual Office
 
-**Data da Análise**: 2025-01-16  
+**Data da Análise**: 2025-01-16 (atualização: 2025-02-13)  
 **Escopo**: Verificação de consistência entre documentação (arquivos `.md`) e código implementado
+
+## Atualização 2025-02-13 — Correções Aplicadas
+
+Foi feita uma nova verificação doc vs. implementação. As seguintes correções foram aplicadas para alinhar a documentação ao código:
+
+| Item | Antes (doc) | Depois (doc alinhada ao código) |
+|------|-------------|----------------------------------|
+| **Estado de portais** | `agents/.cache/portal-state.json` | MongoDB (collection `tvo-portal-state`) via `PortalStateRepository` |
+| **kv-state / deduplicação** | Funções `loadPortalState()`, `persistPortalState()` em arquivo JSON | `portalStateRepository.findState()`, `portalStateRepository.upsertSeen()` em MongoDB |
+| **Resposta do Classifier (API)** | Exemplo com `targetVectorStoreId`, `confidenceScore`, id antigo | Exemplo com `vectorStoreId`, `score`, id dos 12 stores (`vs_specs_mercadorias`, etc.) |
+| **Agentes de consulta** | Exemplos com `specialist-nfe`, `specialist-cte` | Exemplos com `spec-mercadorias`, `spec-transporte` (conforme `agents.yaml` e `user-query.ts`) |
+| **Função de seleção de especialistas** | `pickSpecialists()` com keywords | `pickSpecialistsFromTriage()` com resultado do triage (spec-mercadorias, spec-transporte, legislacao-ibs-cbs) |
+| **Vector stores em exemplos** | `normas-tecnicas-nfe`, `manuais-nfe` | `vs_specs_mercadorias`, `vs_schemas_xsd` (12 stores em `vectorstores.yaml`) |
+| **README prompts** | Lista specialist-nfe/cte como principais | Lista triage-router, source-planner, spec-mercadorias, spec-transporte; nota que specialist-nfe/cte são referência |
+| **Portais** | "60+ portais"; ENCAT NFC-e como ativo | 57 portais em `portals.yaml`; ENCAT NFC-e marcado como referência (não configurado) |
+| **Debugging** | `cat agents/.cache/portal-state.json` | Consulta à collection MongoDB `tvo-portal-state` |
+
+**Arquivos alterados**: `README.md`, `docs/AGENTS.md`, `docs/PORTAIS.md`, `docs/DOCUMENTATION_AUDIT.md`.
+
+---
 
 ## Resumo Executivo
 

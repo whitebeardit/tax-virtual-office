@@ -4,8 +4,6 @@ export type AgentId =
   | "source-planner"
   | "spec-mercadorias"
   | "spec-transporte"
-  | "specialist-nfe"
-  | "specialist-cte"
   | "legislacao-ibs-cbs"
   | "tax-portal-watcher"
   | "tax-document-classifier"
@@ -20,6 +18,12 @@ export interface UserQueryRequest {
   question: string;
   context?: string;
   metadata?: Record<string, string>;
+  /** Contexto já recuperado por retrieval (triage → planner → retrieval). Preenchendo evita coordinator fazer file-search redundante. */
+  preRetrievedContext?: string;
+  /** Resultado do triage; usado para enriquecer plan/sources. */
+  triageResult?: TriageResult;
+  /** Vector stores consultados no retrieval; usado para sources. */
+  storesQueried?: string[];
 }
 
 export interface UserQueryResponse {
@@ -75,4 +79,48 @@ export interface ClassifiedDocument {
   score?: number;
   confidenceScore?: number; // 0.0 a 1.0 - grau de confiança da classificação
   alternativeStores?: string[]; // Vector stores alternativos caso o principal não seja adequado
+}
+
+/** Trilha de intenção da pergunta (triage). */
+export type TriageTrail =
+  | "Documento"
+  | "Integracao"
+  | "Validacao"
+  | "Evento"
+  | "Legislacao"
+  | "Operacao"
+  | "Historico"
+  | "Calculo";
+
+/** Família de documento fiscal. */
+export type TriageFamily =
+  | "mercadorias"
+  | "transporte"
+  | "utilities"
+  | "declaracoes"
+  | "plataformas";
+
+/** Tipo de documento (modelo). */
+export type TriageDocType =
+  | "nfe"
+  | "nfce"
+  | "cte"
+  | "mdfe"
+  | "bpe"
+  | "nf3e"
+  | "nfcom"
+  | "dce"
+  | "nff"
+  | "pes"
+  | "cff"
+  | "one"
+  | "difal"
+  | "nfeab";
+
+/** Resultado do triage (classificação determinística da pergunta). */
+export interface TriageResult {
+  trail: TriageTrail;
+  family?: TriageFamily;
+  doc_type?: TriageDocType;
+  uf?: string;
 }

@@ -1,8 +1,9 @@
 import { run } from "@openai/agents";
 import { createOpenAIAgent, getTracingInfo } from "../config/openai-agents.js";
 import { getAgentDefinition } from "./registry.js";
-import {
+import type {
   AgentTraceExample,
+  TriageResult,
   UserQueryRequest,
   UserQueryResponse,
 } from "./types.js";
@@ -19,10 +20,13 @@ export async function invokeCoordinator(
   // Criar agente usando o Agents SDK
   const agent = createOpenAIAgent("coordinator");
 
-  // Construir o prompt do usuário
-  const userPrompt = `Pergunta: ${input.question}${
+  // Construir o prompt do usuário (incluir contexto pré-recuperado quando disponível)
+  let userPrompt = `Pergunta: ${input.question}${
     input.context ? `\nContexto: ${input.context}` : ""
   }`;
+  if (input.preRetrievedContext) {
+    userPrompt = `[CONTEXTO PRÉ-RECUPERADO dos vector stores]\n${input.preRetrievedContext}\n\n${userPrompt}\n\nUse o contexto acima como base. Só chame file-search se precisar de mais detalhes em um store específico.`;
+  }
 
   // Executar o agente com tracing automático
   // O run() automaticamente envia traces para o dashboard da OpenAI
@@ -39,25 +43,45 @@ export async function invokeCoordinator(
     );
   }
 
+  const plan = buildInstrumentedPlan(input.question, input.triageResult, input.storesQueried);
+  const sources = [
+    "agents/prompts/coordinator.system.md",
+    "docs/WORKFLOWS.md",
+    "docs/PORTAIS.md",
+    ...(input.storesQueried || []),
+  ];
+
   return {
     answer,
-    plan: buildInstrumentedPlan(input.question),
+    plan,
     agentTraces: buildTraceExamples(),
-    sources: [
-      "agents/prompts/coordinator.system.md",
-      "docs/WORKFLOWS.md",
-      "docs/PORTAIS.md",
-    ],
+    sources,
   };
 }
 
-function buildInstrumentedPlan(question: string): string[] {
-  return [
-    "Carregar instruções do coordinator (agents/prompts/coordinator.system.md) e mapear especialistas e ferramentas disponíveis.",
-    "Consultar file-search em docs/ e agents/prompts para recuperar legislações, portais e fluxos relevantes antes de chamar modelos.",
-    "Acionar web/http-fetch apenas quando a busca local não cobrir a pergunta, priorizando portais oficiais listados em docs/PORTAIS.md.",
-    `Distribuir follow-ups para especialistas adequados à pergunta (ex.: ${question}) com contexto extraído de file-search/web e logs do catálogo.`,
-    "Consolidar a resposta com referências explícitas e anexar um rastro (trace) resumindo ferramentas, modelos e fontes usadas por cada agente.",
+function buildInstrumentedPlan(
+  question: string,
+  triageResult?: TriageResult,
+  storesQueried?: string[]
+): string[] {
+  const steps = [
+    "Triage (classificação da pergunta): trilha, família, doc_type.",
+    triageResult
+      ? `Triage resultado: trilha=${triageResult.trail}${triageResult.family ? `, família=${triageResult.family}` : ""}${triageResult.doc_type ? `, doc_type=${triageResult.doc_type}` : ""}.`
+      : null,
+    "Source planner: escolha de 2–3 vector stores prioritários.",
+    storesQueried?.length
+      ? `Stores consultados: ${storesQueried.join(", ")}.`
+      : null,
+    "Retrieval: file-search nos stores planejados.",
+    "Coordinator: usar contexto recuperado e/ou file-search adicional; delegar a especialistas quando necessário.",
+    "Consolidar resposta com referências explícitas e traces.",
+  ].filter(Boolean) as string[];
+
+  return steps.length > 0 ? steps : [
+    "Carregar instruções do coordinator e mapear especialistas.",
+    `Distribuir follow-ups para especialistas à pergunta: ${question}.`,
+    "Consolidar a resposta com referências e traces.",
   ];
 }
 
@@ -67,14 +91,14 @@ function buildTraceExamples(): AgentTraceExample[] {
       agentId: "coordinator" as const,
       calledTools: ["file-search:docs/WORKFLOWS.md", "web:portal-fazenda"],
       sample:
-        "[coordinator] file-search → encontrou manual de NF-e em docs/PORTAIS.md; web → validou versão do layout no portal da SEFAZ; despacho para specialist-nfe e specialist-cte.",
+        "[coordinator] file-search → encontrou manual de NF-e em docs/PORTAIS.md; web → validou versão do layout no portal da SEFAZ; despacho para spec-mercadorias e spec-transporte.",
       note: "Trace mostra decisões do coordinator com fontes locais e externas.",
     },
     {
-      agentId: "specialist-nfe" as const,
+      agentId: "spec-mercadorias" as const,
       calledTools: ["file-search:docs/AGENTS.md"],
       sample:
-        "[specialist-nfe] file-search → extraiu regras de destaque de ICMS do FAQ do portal; consolidou notas e citou seção específica na resposta final.",
+        "[spec-mercadorias] file-search → extraiu regras de destaque de ICMS do FAQ do portal; consolidou notas e citou seção específica na resposta final.",
     },
   ];
 }

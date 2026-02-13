@@ -12,14 +12,17 @@ Repositório base para o Escritório Tributário Virtual com agentes coordenador
 
 ## Prompts do sistema (versão final)
 
-Todos os prompts de system já estão consolidados e versionados em `agents/prompts/*.system.md`.
+Todos os prompts de system estão consolidados em `agents/prompts/*.system.md`. Os agentes ativos são definidos em `agents/agents.yaml`.
 
 - `coordinator.system.md`: orquestra especialistas e ferramentas MCP.
-- `specialist-nfe.system.md`, `specialist-cte.system.md`: especialistas por documento fiscal (NF-e/NFC-e e CT-e).
-- `legislacao-ibs-cbs.system.md`: acompanha a reforma tributária.
+- `triage-router.system.md`, `source-planner.system.md`: classificação da pergunta e planejamento de vector stores.
+- `spec-mercadorias.system.md`, `spec-transporte.system.md`: especialistas por capacidade (NF-e/NFC-e e CT-e/MDF-e/BP-e).
+- `legislacao-ibs-cbs.system.md`: reforma tributária (IBS/CBS/IS).
 - `tax-portal-watcher.system.md`: monitora novos documentos em portais fiscais.
 - `tax-document-classifier.system.md`: decide vector store e tags de armazenamento.
 - `tax-document-uploader.system.md`: fluxo final de upload e catalogação.
+
+Os arquivos `specialist-nfe.system.md` e `specialist-cte.system.md` existem como referência; os agentes de consulta usados são `spec-mercadorias` e `spec-transporte`.
 
 ## Arquitetura
 
@@ -58,9 +61,10 @@ Uso básico:
 
 1. Copie `.env.example` para `.env` e ajuste as variáveis.
 2. Instale dependências: `npm install`.
-3. Ambiente de desenvolvimento: `npm run dev`.
-4. Build: `npm run build`.
-5. Servidor HTTP: `npm start` (usa `dist/src/index.js`).
+3. (Opcional) Para validar ou trabalhar com specs AsyncAPI: `npm install -g @asyncapi/cli`.
+4. Ambiente de desenvolvimento: `npm run dev`.
+5. Build: `npm run build`.
+6. Servidor HTTP: `npm start` (usa `dist/src/index.js`).
 
 ## Variáveis de Ambiente
 

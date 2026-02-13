@@ -4,7 +4,7 @@ Este documento descreve os portais fiscais monitorados pelo sistema Tax Virtual 
 
 ## Resumo
 
-O sistema monitora **60+ portais fiscais** organizados em:
+O sistema monitora **57 portais fiscais** (definidos em `agents/portals.yaml`) organizados em:
 
 - **Portais Nacionais**:
   - Portal Nacional NF-e
@@ -51,14 +51,14 @@ Os portais são configurados em `agents/portals.yaml` e processados pelo agente 
 
 ## Portais Nacionais
 
-### 1. ENCAT NFC-e
+### 1. ENCAT NFC-e (referência — não configurado em `portals.yaml`)
 
 - **ID**: `encat-nfce`
 - **Nome**: ENCAT NFC-e
 - **URL Base**: `https://www.encat.org.br`
 - **Caminho de Listagem**: `/nfce-documentos`
 - **Tipo**: `nacional`
-- **Descrição**: Portal da ENCAT (Entidade Nacional de Coordenação e Acompanhamento da Nota Fiscal de Consumidor Eletrônica) com documentação técnica, notas técnicas e atualizações sobre NFC-e.
+- **Descrição**: Portal da ENCAT (Entidade Nacional de Coordenação e Acompanhamento da Nota Fiscal de Consumidor Eletrônica) com documentação técnica, notas técnicas e atualizações sobre NFC-e. **Não está atualmente na lista de `agents/portals.yaml`**; a documentação é mantida para referência.
 
 **Documentos Esperados**:
 - Notas técnicas sobre NFC-e

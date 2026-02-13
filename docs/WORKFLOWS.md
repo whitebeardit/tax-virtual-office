@@ -21,32 +21,33 @@ Content-Type: application/json
 }
 ```
 
-### Fluxo Detalhado
+### Fluxo Detalhado (orquestração determinística)
+
+O fluxo é **código-orquestra**: triage → source planner → retrieval → coordinator.
 
 ```mermaid
 sequenceDiagram
     participant U as Usuário
     participant API as Express API
     participant W as user-query.ts
+    participant T as triage
+    participant P as source-planner
+    participant R as retrieval
     participant C as coordinator
-    participant FS as file-search
-    participant S as specialists
     participant VS as Vector Stores
 
     U->>API: POST /query
     API->>W: runUserQueryWorkflow()
-    W->>C: invokeCoordinator()
-    C->>FS: Consulta vector stores
-    FS->>VS: Busca documentos
-    VS-->>FS: Resultados
-    FS-->>C: Contexto encontrado
-    W->>W: pickSpecialists()
-    W->>S: (se necessário) invokeSpecialist()
-    S->>FS: Consulta técnica
-    FS-->>S: Resultados técnicos
-    S-->>W: Resposta do especialista
-    C-->>W: Resposta do coordinator
-    W->>W: Consolida respostas
+    W->>T: classifyQuestion()
+    T-->>W: TriageResult
+    W->>P: planStores(triage)
+    P-->>W: storeIds (max 3)
+    W->>R: runRetrieval(question, storeIds)
+    R->>VS: fileSearch por store
+    VS-->>R: resultados
+    R-->>W: contexto agregado
+    W->>C: invokeCoordinator(question + preRetrievedContext)
+    C-->>W: answer, plan, sources
     W-->>API: UserQueryResponse
     API-->>U: JSON com resposta
 ```
@@ -58,26 +59,23 @@ sequenceDiagram
    - Valida estrutura JSON
    - Chama `runUserQueryWorkflow()`
 
-2. **Análise pelo Coordinator**
-   - `invokeCoordinator()` analisa a pergunta
-   - Consulta `file-search` em vector stores prioritários
-   - Monta plano de execução
-   - Identifica domínio (NF-e, NFC-e, CT-e, IBS/CBS, Misto)
+2. **Triage (classificação determinística)**
+   - `classifyQuestion()` classifica a intenção: trilha (Documento, Legislação, Cálculo, etc.), família (mercadorias, transporte, …), doc_type (nfe, nfce, cte, …).
+   - Implementação em `src/workflows/triage.ts` (heurística; sem LLM).
 
-3. **Seleção de Especialistas**
-   - `pickSpecialists()` usa heurística baseada em keywords:
-     - "nfc", "nf-e" ou "nfe" → `specialist-nfe` (NF-e modelo 55 e NFC-e modelo 65)
-     - "cte" ou "ct-e" → `specialist-cte`
-     - "ibs" ou "cbs" → `legislacao-ibs-cbs`
-   - Se nenhum keyword encontrado, aciona todos os especialistas
+3. **Source Planner**
+   - `planStores(triageResult)` retorna no máximo 3 vector store ids `vs_*` a consultar, conforme trilha/família/doc_type.
+   - Implementação em `src/workflows/source-planner.ts`.
 
-4. **Consolidação da Resposta**
-   - Combina resposta do coordinator com informações dos especialistas
-   - Adiciona plano de execução
-   - Inclui sources consultadas
-   - Gera traces de agentes para auditoria
+4. **Retrieval**
+   - `runRetrieval(question, storeIds)` executa `file-search` apenas nos stores planejados, com validação de ids e timeout.
+   - Resultados são agregados e repassados ao coordinator como contexto pré-recuperado.
 
-5. **Retorno ao Cliente**
+5. **Coordinator**
+   - Recebe a pergunta e o contexto pré-recuperado; pode fazer file-search adicional se necessário.
+   - Consolida a resposta com fontes e traces.
+
+6. **Retorno ao Cliente**
    - Resposta JSON com:
      - `answer`: Resposta consolidada
      - `plan`: Plano de execução
@@ -112,14 +110,27 @@ sequenceDiagram
 }
 ```
 
-### Vector Stores Consultados
+### Vector Stores (12 ids oficiais)
 
-O coordinator consulta os seguintes vector stores (em ordem de prioridade):
-1. `legislacao-nacional-ibs-cbs-is` (para reforma tributária)
-2. `normas-tecnicas-nfe-nfce-cte` (para questões técnicas)
-3. `documentos-estaduais-ibc-cbs` (para regras estaduais)
-4. `jurisprudencia-tributaria` (para interpretações)
-5. `legis-nfe-exemplos-xml` (para exemplos práticos)
+O sistema usa **apenas** os 12 ids definidos em `agents/vectorstores.yaml` e no contrato com o tax-agent-hub. Ver [docs/VECTOR_STORES.md](VECTOR_STORES.md) e [tax-agent-hub/docs/CONTRACT_VIRTUAL_OFFICE.md](../tax-agent-hub/docs/CONTRACT_VIRTUAL_OFFICE.md).
+
+- **Specs**: `vs_specs_mercadorias`, `vs_specs_transporte`, `vs_specs_utilities`, `vs_specs_plataformas`, `vs_specs_declaracoes`
+- **Schemas/tabelas**: `vs_schemas_xsd`, `vs_tabelas_fiscais`
+- **Legal**: `vs_legal_federal`, `vs_legal_confaz`, `vs_legal_estados`, `vs_jurisprudencia`
+- **Outros**: `vs_changelog_normativo`
+
+O source planner escolhe 2–3 stores por pergunta conforme a trilha e a família.
+
+### Observabilidade do /query
+
+Logs padronizados para custo e latência:
+
+- **Triage**: `Triage classification` com `trail`, `family`, `doc_type`, `uf`.
+- **Source planner**: `Source planner result` com `triageTrail`, `plannedStores`.
+- **Retrieval**: por store `Retrieval: search completed` com `vectorStoreId`, `resultsCount`; falhas em `Retrieval: search failed`.
+- **Workflow**: `User query workflow completed` com `triageTrail`, `storesQueried`, `hitsByStore` (contagem por store), `elapsedMs`.
+
+Use `elapsedMs` e `hitsByStore` para monitorar latência e volume de retrieval por store.
 
 ## 2. Workflow de Varredura Diária de Portais (`/admin/run-daily`)
 

@@ -74,50 +74,15 @@ O coordinator consulta os **12 vector stores** definidos em [docs/VECTOR_STORES.
 
 **Vector Stores**: `vs_specs_transporte`, `vs_schemas_xsd`, `vs_tabelas_fiscais`, `vs_legal_confaz`.
 
-### 4. Especialistas em Documentos Fiscais (legado)
+### 4. Matriz de responsabilidade (objetivo → agente → stores)
 
-#### 4.1. Especialista NF-e / NFC-e (`specialist-nfe`) — mantido para compatibilidade
+- **Dúvidas técnicas NF-e/NFC-e**: spec-mercadorias; stores: `vs_specs_mercadorias`, `vs_schemas_xsd`, `vs_tabelas_fiscais`.
+- **Dúvidas técnicas CT-e/MDF-e/BP-e**: spec-transporte; stores: `vs_specs_transporte`, `vs_schemas_xsd`, `vs_tabelas_fiscais`, `vs_legal_confaz`.
+- **Reforma tributária (IBS/CBS/IS)**: legislacao-ibs-cbs; stores: `vs_legal_federal`, `vs_tabelas_fiscais`, `vs_jurisprudencia`, `vs_legal_estados`.
+- **Dúvidas legais genéricas (ICMS, PIS/COFINS, Convênios, jurisprudência)**: coordinator + source planner; stores: `vs_legal_confaz`, `vs_legal_estados`, `vs_jurisprudencia`, `vs_legal_federal`.
+- **Cálculos tributários (alíquotas, CFOP, NCM, base)**: coordinator + source planner; stores: `vs_tabelas_fiscais`, `vs_legal_federal` / `vs_legal_estados` quando regras de cálculo.
 
-**Responsabilidade**: Responder questões técnicas sobre NF-e (modelo 55) e NFC-e (modelo 65).
-
-**Características**:
-- **Modelo**: `gpt-5.1`
-- **Ferramentas**: `file-search`, `logger`
-- **Prompt**: `agents/prompts/specialist-nfe.system.md`
-
-**Escopo**:
-- NF-e modelo 55 e NFC-e modelo 65: emissão, autorização, rejeição, cancelamento, inutilização
-- Eventos (Carta de Correção, Manifestação, EPEC)
-- Estrutura XML e schemas XSD (ambos os modelos)
-- Web services SEFAZ
-- Regras de validação (CST, CFOP, NCM, CST/CSOSN)
-- Notas técnicas e manuais oficiais (Projeto NF-e, ENCAT, CONFAZ)
-
-**Vector Stores Primários** (unificados para 55 e 65):
-- `normas-tecnicas-nfe` (Notas Técnicas NF-e e NFC-e)
-- `manuais-nfe` (Manuais oficiais, MOC, guias de implementação, documentação ENCAT)
-- `informes-tecnicos-nfe` (Informes, comunicados, FAQs)
-- `esquemas-xml-nfe` (Schemas XSD NF-e e NFC-e)
-- `tabelas-*` (Tabelas compartilhadas: CFOP, NCM, alíquotas, códigos)
-- `tabelas-nfe-especificas` (Tabelas específicas NF-e/NFC-e)
-
-**Vector Stores Secundários**:
-- `legislacao-nacional-ibs-cbs-is` (quando envolver reforma tributária)
-- `documentos-estaduais-ibc-cbs` (regras específicas de UF)
-- `ajustes-sinief-nfe` (Ajustes SINIEF NF-e e NFC-e)
-
-**Nota**: Para lista completa de vector stores, consulte [docs/VECTOR_STORES.md](VECTOR_STORES.md)
-
-#### 2.2. Especialista CT-e (`specialist-cte`)
-
-**Responsabilidade**: Responder questões técnicas sobre CT-e, CT-e OS e MDF-e.
-
-**Características**:
-- **Modelo**: `gpt-5.1`
-- **Ferramentas**: `file-search`, `logger`
-- **Prompt**: `agents/prompts/specialist-cte.system.md`
-
-**Vector Stores**: use `vs_specs_transporte`, `vs_schemas_xsd`, `vs_tabelas_fiscais`, `vs_legal_confaz`. Ver [docs/VECTOR_STORES.md](VECTOR_STORES.md).
+Todos os ids são os 12 `vs_*` definidos em [docs/VECTOR_STORES.md](VECTOR_STORES.md) e no contrato com o tax-agent-hub.
 
 ### 5. Especialista em Legislação (`legislacao-ibs-cbs`)
 
@@ -153,10 +118,10 @@ O coordinator consulta os **12 vector stores** definidos em [docs/VECTOR_STORES.
 1. Lê configuração de portais em `agents/portals.yaml`
 2. Faz fetch das páginas de listagem via `httpFetch()` (função interna em `src/mcp/httpFetchTool.ts`)
 3. Extrai links e metadados (título, data, URL) via regex HTML
-4. Carrega estado anterior de `agents/.cache/portal-state.json` (gerenciamento interno de estado)
+4. Carrega estado anterior do MongoDB (collection `tvo-portal-state`) via `PortalStateRepository`
 5. Filtra apenas documentos novos (deduplicação por `contentHash`)
 6. Gera `contentHash` para cada documento novo (SHA256 de `portalId:url:title`)
-7. Atualiza estado em `portal-state.json` com novos hashes
+7. Atualiza estado no MongoDB (`tvo-portal-state`) com novos hashes
 8. Retorna array de `PortalDocument[]` com novos documentos
 
 **Implementação**: `watchPortals()` em `src/agents/maintenance.ts`
@@ -179,11 +144,11 @@ O coordinator consulta os **12 vector stores** definidos em [docs/VECTOR_STORES.
 ```
 
 **Portais Monitorados** (configurados em `agents/portals.yaml`):
-- ENCAT NFC-e
 - Portal Nacional NF-e
 - CONFAZ Ajustes SINIEF
 - SEFAZ-SP NFC-e
 - SEFAZ-MG NF-e
+- SVRS (múltiplos documentos: NF-e, NFC-e, CT-e, MDF-e, etc. — Notícias, Documentos, Legislação por documento)
 
 #### 6.2. Classificador de Documentos (`tax-document-classifier`)
 
@@ -308,9 +273,9 @@ As seguintes funcionalidades são implementadas diretamente no código e **não*
 - **Tipo**: Funcionalidade interna (gerenciamento de estado)
 - **Uso**: Armazenar estado de documentos já processados (deduplicação).
 - **Agentes**: tax-portal-watcher (via código, não via tool)
-- **Armazenamento**: `agents/.cache/portal-state.json`
-- **Implementação**: Funções `loadPortalState()`, `persistPortalState()`, `hasSeen()`, `rememberDocument()` em `src/agents/maintenance.ts`
-- **Nota**: Não é um MCP tool - é gerenciamento de estado interno via arquivo JSON
+- **Armazenamento**: MongoDB (collection `tvo-portal-state`) via `PortalStateRepository` em `src/repositories/portal-state.repository.ts`
+- **Implementação**: `watchPortals()` em `src/agents/maintenance.ts` usa `portalStateRepository.findState()` e `portalStateRepository.upsertSeen()` para deduplicação por `contentHash`
+- **Nota**: Não é um MCP tool - é gerenciamento de estado interno via repositório MongoDB
 
 #### `storage`
 - **Tipo**: Funcionalidade interna (salvamento de arquivos)
@@ -344,7 +309,7 @@ As seguintes funcionalidades são implementadas diretamente no código e **não*
 | `logger` | MCP Tool | ✅ Implementado | `src/agents/tools.ts` |
 | `http-fetch` | Função interna | ✅ Implementado | `src/mcp/httpFetchTool.ts` |
 | `http-download` | Função interna | ✅ Implementado | Via `httpFetch` em `maintenance.ts` |
-| `kv-state` | Estado interno | ✅ Implementado | `maintenance.ts` (JSON) |
+| `kv-state` | Estado interno | ✅ Implementado | `maintenance.ts` + MongoDB (`tvo-portal-state`) |
 | `storage` | Função interna | ✅ Implementado | `maintenance.ts` (fs) |
 | `file-search-upload` | Planejado | ⏸️ Não implementado | - |
 | `task-queue` | Planejado | ⏸️ Não implementado | - |
@@ -368,7 +333,7 @@ flowchart TD
 2. `runUserQueryWorkflow()` é acionado
 3. `invokeCoordinator()` analisa a pergunta e consulta `file-search`
 4. Coordinator pode acionar triage-router, source-planner e especialistas (spec-mercadorias, spec-transporte, legislacao-ibs-cbs) via handoffs
-5. pickSpecialists() (workflow) identifica especialistas para plano/traces (heurística por keywords)
+5. pickSpecialistsFromTriage() (workflow) identifica especialistas para plano/traces a partir do resultado do triage (spec-mercadorias, spec-transporte, legislacao-ibs-cbs)
 6. Resposta consolidada retorna com:
    - `answer`: Resposta final
    - `plan`: Plano de execução
@@ -385,13 +350,13 @@ flowchart TD
     D --> E[Para cada portal]
     E --> F[httpFetch: página de listagem]
     F --> G[parsePortalListing: extrai links]
-    G --> H[Carrega portal-state.json]
+    G --> H[Carrega estado do MongoDB (tvo-portal-state)]
     H --> I{Deduplicação}
     I -->|Novo| J[classifyDocument]
     I -->|Já visto| K[Ignora]
     J --> L[uploadDocument]
     L --> M[Salva em .cache/downloads]
-    M --> N[Atualiza portal-state.json]
+    M --> N[Atualiza estado no MongoDB]
 ```
 
 **Etapas**:
@@ -401,11 +366,11 @@ flowchart TD
    - Lê `agents/portals.yaml`
    - Faz fetch de cada portal via `httpFetch`
    - Extrai documentos via regex HTML
-   - Deduplica por `contentHash` usando `portal-state.json`
+   - Deduplica por `contentHash` usando MongoDB (collection `tvo-portal-state`)
 4. Para cada documento novo:
    - `classifyDocument()` decide vector store e tags
    - `uploadDocument()` baixa e salva o arquivo
-5. Estado atualizado em `agents/.cache/portal-state.json`
+5. Estado atualizado no MongoDB (collection `tvo-portal-state`)
 
 ## Registro de Agentes
 
@@ -571,12 +536,14 @@ interface UserQueryResponse {
 
 ### Resposta do Classifier
 
+A API `POST /admin/classify-document` retorna um objeto com `vectorStoreId`, `tags`, `rationale` e `score` (e opcionalmente `confidenceScore` quando a classificação vem do agente LLM). Apenas um dos 12 ids de `agents/vectorstores.yaml` é retornado (ex.: `vs_specs_mercadorias`).
+
 ```json
 {
-  "targetVectorStoreId": "normas-tecnicas-nfce",
-  "tags": ["portal:encat-nfce", "tipo:nota-tecnica", "ano:2025", "documento:nfce"],
-  "confidenceScore": 0.85,
-  "rationale": "Título menciona 'Nota Técnica' e 'NFC-e'; portal é especializado em NFC-e. Metadados do crawler indicam domain='nfce' e natureza='NOTA_TECNICA'."
+  "vectorStoreId": "vs_specs_mercadorias",
+  "tags": ["portal:svrs-nfce-documentos", "tipo:nota-tecnica", "ano:2025", "documento:nfce"],
+  "score": 85,
+  "rationale": "Título menciona 'Nota Técnica' e 'NFC-e'; portal especializado em NFC-e. Metadados do crawler indicam domain='nfce' e natureza='NOTA_TECNICA'."
 }
 ```
 
@@ -597,7 +564,7 @@ interface UserQueryResponse {
 
 ### Cache e Estado
 
-- **`agents/.cache/portal-state.json`**: Estado de documentos já processados
+- **MongoDB (collection `tvo-portal-state`)**: Estado de documentos já processados (deduplicação por `contentHash`); acessado via `PortalStateRepository`
 - **`agents/.cache/downloads/`**: Arquivos baixados dos portais
 - **Cache em memória**: Definições YAML carregadas uma vez
 
@@ -745,7 +712,7 @@ Esta seção documenta limitações técnicas e comportamentos conhecidos da arq
 
 ### 4. Heurística Simples de Seleção de Especialistas
 
-**Limitação**: `pickSpecialists()` usa apenas keywords simples (ex.: "nfc", "nf-e", "cte", "ibs") para identificar especialistas.
+**Limitação**: `pickSpecialistsFromTriage()` usa o resultado do triage (trilha, família, doc_type) para selecionar especialistas (spec-mercadorias, spec-transporte, legislacao-ibs-cbs); a seleção é determinística, não semântica.
 
 **Impacto**:
 - Pode selecionar especialistas incorretos para perguntas ambíguas
@@ -805,10 +772,10 @@ curl -X POST http://localhost:3000/query \
 
 **Fluxo Interno**:
 1. `runUserQueryWorkflow()` recebe a requisição
-2. `invokeCoordinator()` analisa a pergunta
-3. `pickSpecialists()` identifica keywords "nf-e" → seleciona `specialist-nfe`
-4. Coordinator consulta `file-search` em vector stores relevantes (ex: `normas-tecnicas-nfe`, `manuais-nfe`)
-5. Coordinator monta plano de execução
+2. Triage classifica a pergunta (trilha, família, doc_type); source-planner define stores; retrieval executa file-search
+3. `invokeCoordinator()` recebe contexto pré-recuperado e consolida a resposta
+4. `pickSpecialistsFromTriage()` identifica especialistas (ex.: família "mercadorias" ou doc_type "nfe" → `spec-mercadorias`)
+5. Coordinator consulta `file-search` em vector stores relevantes (ex: `vs_specs_mercadorias`, `vs_schemas_xsd`)
 6. Resposta consolidada é retornada
 
 **Response** (exemplo):
@@ -819,16 +786,16 @@ curl -X POST http://localhost:3000/query \
     "Carregar instruções do coordinator e mapear especialistas disponíveis.",
     "Consultar file-search em docs/ e agents/prompts para recuperar legislações relevantes.",
     "Acionar web/http-fetch apenas quando necessário, priorizando portais oficiais.",
-    "Distribuir follow-ups para especialistas adequados (specialist-nfe) com contexto extraído.",
+    "Distribuir follow-ups para especialistas adequados (spec-mercadorias) com contexto extraído.",
     "Consolidar resposta com referências explícitas e anexar trace resumindo ferramentas usadas.",
-    "Especialistas acionados: NF-e Specialist.",
+    "Especialistas sugeridos (trilha Documento): Spec Mercadorias (NF-e / NFC-e).",
     "Ferramentas previstas: file-search, logger."
   ],
   "sources": [
     "agents/prompts/coordinator.system.md",
     "docs/WORKFLOWS.md",
     "docs/PORTAIS.md",
-    "NF-e Specialist",
+    "Spec Mercadorias (NF-e / NFC-e)",
     "docs/AGENTS.md",
     "docs/WORKFLOWS.md"
   ],
@@ -836,13 +803,13 @@ curl -X POST http://localhost:3000/query \
     {
       "agentId": "coordinator",
       "calledTools": ["file-search:docs/WORKFLOWS.md", "web:portal-fazenda"],
-      "sample": "[coordinator] file-search → encontrou manual de NF-e em docs/PORTAIS.md; web → validou versão do layout no portal da SEFAZ; despacho para specialist-nfe.",
+      "sample": "[coordinator] file-search → encontrou manual de NF-e em docs/PORTAIS.md; web → validou versão do layout no portal da SEFAZ; despacho para spec-mercadorias.",
       "note": "Trace mostra decisões do coordinator com fontes locais e externas."
     },
     {
-      "agentId": "specialist-nfe",
+      "agentId": "spec-mercadorias",
       "calledTools": ["file-search"],
-      "sample": "[specialist-nfe] file-search → extraiu regras de cancelamento de NF-e do FAQ do portal; consolidou notas e citou seção específica na resposta final.",
+      "sample": "[spec-mercadorias] file-search → extraiu regras de cancelamento de NF-e do FAQ do portal; consolidou notas e citou seção específica na resposta final.",
       "note": "Usado como exemplo de trace para auditar as decisões do especialista."
     }
   ]
@@ -889,9 +856,9 @@ Segundo a **Lei Complementar 214/2025, art. 43**, o ICMS continuará sendo calcu
 
 | Fonte                          | Tipo         | Referência                                       |
 |--------------------------------|--------------|--------------------------------------------------|
-| normas-tecnicas-nfe            | vector store | NT 2019.001, seção C.5.2, Projeto NF-e         |
-| legislacao-nacional-ibs-cbs-is | vector store | LC 214/2025, arts. 43–50, Ministério da Fazenda |
-| specialist-nfe                 | especialista | Análise técnica de campos XML                    |
+| vs_specs_mercadorias           | vector store | NT 2019.001, seção C.5.2, Projeto NF-e         |
+| vs_legal_federal               | vector store | LC 214/2025, arts. 43–50, Ministério da Fazenda |
+| spec-mercadorias               | especialista | Análise técnica de campos XML                    |
 | legislacao-ibs-cbs             | especialista | EC 132/2023, cronograma de transição             |
 
 ## Limitações e Incertezas
@@ -1066,9 +1033,9 @@ traces.forEach(trace => {
 ```typescript
 // Registrar decisão importante
 logInfo("Especialista acionado", {
-  agentId: "specialist-nfe",
+  agentId: "spec-mercadorias",
   question: "Prazo de cancelamento",
-  vectorStores: ["normas-tecnicas-nfe", "manuais-nfe"]
+  vectorStores: ["vs_specs_mercadorias", "vs_schemas_xsd"]
 });
 ```
 
@@ -1080,8 +1047,8 @@ logInfo("Especialista acionado", {
 
 **Verificar Classificação**:
 ```bash
-# Ver estado atual de documentos processados
-cat agents/.cache/portal-state.json
+# Ver estado atual de documentos processados (MongoDB collection tvo-portal-state)
+# Use um cliente MongoDB ou script que consulte a collection tvo-portal-state
 
 # Ver documentos baixados
 ls -la agents/.cache/downloads/

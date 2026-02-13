@@ -39,22 +39,6 @@ agents:
       - file-search
       - logger
 
-  - id: specialist-nfe
-    name: NF-e / NFC-e Specialist
-    model: gpt-5.1
-    instructions_file: ./prompts/specialist-nfe.system.md
-    tools:
-      - file-search
-      - logger
-
-  - id: specialist-cte
-    name: CT-e Specialist
-    model: gpt-5.1
-    instructions_file: ./prompts/specialist-cte.system.md
-    tools:
-      - file-search
-      - logger
-
   - id: legislacao-ibs-cbs
     name: IBS/CBS/IS Legislation Specialist
     model: gpt-5.1-pro

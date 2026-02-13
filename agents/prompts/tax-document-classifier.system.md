@@ -82,74 +82,46 @@ Você **deve** retornar apenas o JSON a seguir:
 - **`fileName`**: Nome do arquivo pode indicar tipo de tabela (ex: "CFOP", "NCM")
 - **`modelo`** ('55', '65', '57', '67'): Modelo do documento fiscal
 
-### Mapeamento de Natureza para Vector Stores
+### Mapeamento de Natureza para Vector Stores (use APENAS os 12 ids vs_*)
 
 **NOTA_TECNICA:**
-- Se `domain === 'nfe'` ou `domain === 'nfce'` → `normas-tecnicas-nfe`
-- Se `domain === 'cte'` ou `domain === 'mdfe'` → `normas-tecnicas-cte`
-- Se `domain` for um dos novos DFe (bpe, nf3e, dce, nfgas, cff, nff, nfag, nfcom, one, nfeab, pes, difal) → `documentos-{domain}`
-- Se ausente → `normas-tecnicas-nfe` (fallback)
+- Se `domain === 'nfe'` ou `domain === 'nfce'` → `vs_specs_mercadorias`
+- Se `domain === 'cte'` ou `domain === 'mdfe'` ou `domain === 'bpe'` → `vs_specs_transporte`
+- Se `domain` for nf3e, nfcom, nfgas, nfag → `vs_specs_utilities`
+- Se `domain` for dce → `vs_specs_declaracoes`
+- Se `domain` for nff, pes, cff, one, nfeab, difal → `vs_specs_plataformas`
+- Se ausente → `vs_specs_mercadorias` (fallback)
 
-**MANUAL:**
-- Se `domain === 'nfe'` ou `domain === 'nfce'` → `manuais-nfe`
-- Se `domain === 'cte'` ou `domain === 'mdfe'` → `manuais-cte`
-- Se `domain` for um dos novos DFe (bpe, nf3e, dce, nfgas, cff, nff, nfag, nfcom, one, nfeab, pes, difal) → `documentos-{domain}`
+**MANUAL:** (mesmo mapeamento por família que NOTA_TECNICA)
+- nfe/nfce → `vs_specs_mercadorias`; cte/mdfe/bpe → `vs_specs_transporte`; nf3e/nfcom/nfgas/nfag → `vs_specs_utilities`; dce → `vs_specs_declaracoes`; nff/pes/cff/one/nfeab/difal → `vs_specs_plataformas`
 
-**TABELA:**
-- Se `fileName` contém "CFOP" → `tabelas-cfop`
-- Se `fileName` contém "NCM" → `tabelas-ncm`
-- Se `fileName` contém "meio" ou "pagamento" → `tabelas-meios-pagamento`
-- Se `fileName` contém "aliquota" → `tabelas-aliquotas`
-- Se `assuntos` inclui 'REFORMA_TRIBUTARIA' ou 'IBC' ou 'CBS' → `tabelas-ibc-cbs`
-- Se `domain === 'nfe'` ou `domain === 'nfce'` e tabela específica → `tabelas-nfe-especificas`
-- Caso contrário → `tabelas-codigos` (genérico)
+**TABELA:** (todas as tabelas fiscais em um único store)
+- Qualquer tabela (CFOP, NCM, meios de pagamento, alíquotas, códigos, IBC/CBS) → `vs_tabelas_fiscais`
 
-**INFORME_TECNICO:**
-- Se `domain === 'nfe'` ou `domain === 'nfce'` → `informes-tecnicos-nfe`
-- Se `domain === 'cte'` ou `domain === 'mdfe'` → `informes-tecnicos-cte`
-- Se `domain` for um dos novos DFe (bpe, nf3e, dce, nfgas, cff, nff, nfag, nfcom, one, nfeab, pes, difal) → `documentos-{domain}`
+**INFORME_TECNICO:** (mesmo mapeamento por família que NOTA_TECNICA)
+- nfe/nfce → `vs_specs_mercadorias`; cte/mdfe/bpe → `vs_specs_transporte`; utilities/plataformas/declaracoes conforme domain
 
 **ESQUEMA_XML / SCHEMA_XML (categoria Schemas):**
-- Quando `natureza` for `ESQUEMA_XML` ou `SCHEMA_XML`, o documento é um schema XML/XSD — use **`vs_schemas_xsd`** com alta confiança (≥ 0.85). O domínio apenas contextualiza (nfe, cte, etc.); o store de schemas é único.
-- Para `domain === 'nfce'` → schemas NFC-e e NF-e ficam no mesmo store que NF-e (`vs_schemas_xsd`).
-- Se `domain` for confaz ou other e ainda assim vier natureza schema → use `vs_schemas_xsd`.
+- Quando `natureza` for `ESQUEMA_XML` ou `SCHEMA_XML` → use **`vs_schemas_xsd`** com alta confiança (≥ 0.85).
 
-**AJUSTE_SINIEF:**
-- Se `domain === 'nfe'` ou `domain === 'nfce'` → `ajustes-sinief-nfe`
-- Se `domain` for um dos novos DFe (bpe, nf3e, dce, nfgas, cff, nff, nfag, nfcom, one, nfeab, pes, difal) → `documentos-{domain}`
-- Caso contrário → `ajustes-sinief-geral`
+**AJUSTE_SINIEF:** → `vs_legal_confaz`
 
-**CONVENIO:**
-- Se título/URL menciona "ICMS" → `convenios-icms`
-- Se título/URL menciona "COTEPE" → `atos-cotepe`
+**CONVENIO / ATOS COTEPE:** → `vs_legal_confaz`
 
 **LEI, DECRETO, REGULAMENTO:**
-- Se `assuntos` inclui 'REFORMA_TRIBUTARIA' ou 'IBS' ou 'CBS' ou 'IS' → `legislacao-nacional-ibs-cbs-is`
-- Se `portalType === 'estadual'` → `documentos-estaduais-ibc-cbs`
-- Caso contrário → `legislacao-nacional-ibs-cbs-is`
+- Se `assuntos` inclui 'REFORMA_TRIBUTARIA' ou 'IBS' ou 'CBS' ou 'IS' → `vs_legal_federal`
+- Se `portalType === 'estadual'` → `vs_legal_estados`
+- Caso contrário → `vs_legal_federal`
 
-**JURISPRUDENCIA:**
-- Títulos com "Parecer", "Solução de Consulta", "Acórdão" → `jurisprudencia-tributaria`
+**JURISPRUDENCIA:** → `vs_jurisprudencia`
 
 ### Heurísticas de Fallback (quando metadados não disponíveis)
-- títulos contendo "NT", "Nota Técnica":
-  - Se menciona "NF-e" ou "modelo 55" → `normas-tecnicas-nfe`
-  - Se menciona "NFC-e" ou "modelo 65" → `normas-tecnicas-nfce`
-  - Se menciona "CT-e" ou "MDF-e" → `normas-tecnicas-cte`
-- títulos com "Manual de Orientação", "MOC":
-  - Se menciona "NF-e" → `manuais-nfe`
-  - Se menciona "NFC-e" → `manuais-nfce`
-  - Se menciona "CT-e" → `manuais-cte`
-- títulos com "schema", "XSD", "XML":
-  - Usar `esquemas-xml-{domain}` conforme o domínio (nfe, nfce, cte, nfgas, nfag, bpe, dce, nf3e, nfcom, nfeab, one, cff, difal, pes, nff). Ex.: NFGas → `esquemas-xml-nfgas`, BPe → `esquemas-xml-bpe`
-- documentos de domínios novos (BPe, NF3e, DCe, NFGas, CFF, NFF, NFAg, NFCom, ONE, NFeAB, PES, DIFAL):
-  - Schemas XSD → `esquemas-xml-{domain}` (ex.: NFGas → `esquemas-xml-nfgas`). Outros tipos → `documentos-{domain}`.
-- títulos com "Lei Complementar", "LC", "Decreto", "Regulamento" de âmbito nacional:
-  - Se menciona "IBS", "CBS", "IS" ou "reforma tributária" → `legislacao-nacional-ibs-cbs-is`
-- títulos/portais de CONFAZ, Ajustes SINIEF:
-  - Se menciona "ICMS" → `convenios-icms`
-  - Se menciona "COTEPE" → `atos-cotepe`
-  - Se é ajuste SINIEF → `ajustes-sinief-geral`
+- títulos contendo "NT", "Nota Técnica": NF-e/NFC-e → `vs_specs_mercadorias`; CT-e/MDF-e → `vs_specs_transporte`
+- títulos com "Manual de Orientação", "MOC": mesmo mapeamento por menção (NF-e/NFC-e → `vs_specs_mercadorias`, CT-e → `vs_specs_transporte`)
+- títulos com "schema", "XSD", "XML": → `vs_schemas_xsd`
+- documentos de domínios novos: specs por família (utilities, plataformas, declaracoes, transporte)
+- títulos com "Lei Complementar", "LC", "Decreto", "Regulamento" nacional: "IBS"/"CBS"/"IS"/"reforma" → `vs_legal_federal`
+- títulos/portais de CONFAZ, Ajustes SINIEF: → `vs_legal_confaz`
 - Utilize também:
   - `portalId` (ex.: `portal-nacional-nfe`, `confaz-ajustes-sinief`, `sefaz-sp`) como forte indício;
   - partes da URL (ex.: `/nt/`, `/lei/`, `/ajuste/`, `/schema/`, `/tabela/`) para refinar a decisão.
