@@ -11,12 +11,14 @@ import { planStores } from "./source-planner.js";
 import { runRetrieval } from "./retrieval.js";
 import { logger } from "../utils/logger.js";
 
-/** Evento emitido pelo workflow em modo stream (step, thought, tool, agent, done). */
+/** Evento emitido pelo workflow em modo stream (step, thought, tool, agent, handoff, answer_delta, done). */
 export type WorkflowStreamEvent =
   | { type: "step"; step: string; label?: string }
   | { type: "thought"; delta?: string; name?: string; args?: unknown }
   | { type: "tool"; name?: string; delta?: string; args?: unknown }
   | { type: "agent"; name?: string; delta?: string; args?: unknown }
+  | { type: "handoff"; to?: string; messageSummary?: string }
+  | { type: "answer_delta"; delta?: string }
   | { type: "done"; answer: string; plan?: string[]; sources?: string[]; agentTraces?: UserQueryResponse["agentTraces"] };
 
 export type WorkflowStreamEventCallback = (event: WorkflowStreamEvent) => void;
@@ -136,6 +138,8 @@ export async function runUserQueryWorkflowStream(
     if (ev.type === "thought") onEvent({ type: "thought", delta: ev.delta });
     else if (ev.type === "tool") onEvent({ type: "tool", name: ev.name, args: ev.args });
     else if (ev.type === "agent") onEvent({ type: "agent", name: ev.name });
+    else if (ev.type === "handoff") onEvent({ type: "handoff", to: ev.to, messageSummary: ev.messageSummary });
+    else if (ev.type === "answer_delta") onEvent({ type: "answer_delta", delta: ev.delta });
   });
 
   const specialistIds = pickSpecialistsFromTriage(triageResult);

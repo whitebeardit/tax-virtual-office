@@ -123,6 +123,10 @@ export function registerQueryRoutes(app: Express) {
           writeSSE(res, "tool", { name: event.name, args: event.args });
         } else if (event.type === "agent") {
           writeSSE(res, "agent", { name: event.name });
+        } else if (event.type === "handoff") {
+          writeSSE(res, "handoff", { to: event.to, messageSummary: event.messageSummary });
+        } else if (event.type === "answer_delta") {
+          writeSSE(res, "answer_delta", { delta: event.delta });
         } else if (event.type === "done") {
           writeSSE(res, "done", {
             answer: event.answer,

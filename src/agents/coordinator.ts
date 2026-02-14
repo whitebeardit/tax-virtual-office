@@ -9,12 +9,14 @@ import type {
   UserQueryResponse,
 } from "./types.js";
 
-/** Callback para eventos de stream do coordinator (thought, tool, agent). */
+/** Callback para eventos de stream do coordinator (thought, tool, agent, handoff, answer_delta). */
 export type CoordinatorStreamEventCallback = (event: {
-  type: "thought" | "tool" | "agent";
+  type: "thought" | "tool" | "agent" | "handoff" | "answer_delta";
   delta?: string;
   name?: string;
   args?: unknown;
+  to?: string;
+  messageSummary?: string;
 }) => void;
 
 /**
@@ -91,10 +93,10 @@ export async function invokeCoordinatorStream(
     if (event.type === "raw_model_stream_event") {
       const data = event.data as { type?: string; delta?: string };
       if (data?.type === "output_text_delta" && typeof data.delta === "string") {
-        onEvent({ type: "thought", delta: data.delta });
+        onEvent({ type: "answer_delta", delta: data.delta });
       }
     } else if (event.type === "run_item_stream_event") {
-      const ev = event as { name: string; item: { type?: string; rawItem?: { name?: string; arguments?: string }; content?: unknown } };
+      const ev = event as { name: string; item: { type?: string; rawItem?: { name?: string; arguments?: string }; content?: unknown; agent?: { name?: string }; message?: string } };
       if (ev.name === "tool_called" || ev.name === "tool_output") {
         const name = ev.item?.rawItem && typeof ev.item.rawItem === "object" && "name" in ev.item.rawItem
           ? String((ev.item.rawItem as { name?: string }).name)
@@ -108,10 +110,11 @@ export async function invokeCoordinatorStream(
         const text = raw && typeof raw === "object" && "content" in raw ? String((raw as { content?: string }).content ?? "") : "";
         if (text) onEvent({ type: "thought", delta: text });
       } else if (ev.name === "handoff_occurred" || ev.name === "handoff_requested") {
-        const agentName = ev.item && typeof ev.item === "object" && "agent" in ev.item
-          ? String((ev.item as { agent?: { name?: string } }).agent?.name ?? "agent")
-          : "agent";
+        const item = ev.item && typeof ev.item === "object" ? ev.item as { agent?: { name?: string }; message?: string; content?: string } : undefined;
+        const agentName = item?.agent?.name ? String(item.agent.name) : "agent";
+        const messageSummary = item?.message ?? item?.content ?? undefined;
         onEvent({ type: "agent", name: agentName });
+        onEvent({ type: "handoff", to: agentName, messageSummary: typeof messageSummary === "string" ? messageSummary : undefined });
       }
     } else if (event.type === "agent_updated_stream_event") {
       const ev = event as { agent?: { name?: string } };
