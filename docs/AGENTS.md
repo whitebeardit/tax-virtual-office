@@ -32,6 +32,18 @@ O Tax Virtual Office utiliza uma arquitetura baseada em **agentes especializados
 **Vector Stores (12 stores por capacidade/família)**:
 O coordinator consulta os **12 vector stores** definidos em [docs/VECTOR_STORES.md](VECTOR_STORES.md): `vs_specs_mercadorias`, `vs_specs_transporte`, `vs_schemas_xsd`, `vs_tabelas_fiscais`, `vs_legal_federal`, `vs_legal_confaz`, `vs_legal_estados`, `vs_jurisprudencia`, etc. O coordinator pode delegar ao **Triage/Router** e ao **Source Planner** para classificar a intenção e escolher os stores, e aos **especialistas por capacidade** (spec-mercadorias, spec-transporte, legislacao-ibs-cbs).
 
+#### 1.1. Trusted Sources Enricher (`trusted-sources-enricher`)
+
+**Responsabilidade**: Pós-processar a resposta do coordinator para **enriquecer** com pesquisa restrita a **fontes confiáveis** (ex.: CGIBS e relatório oficial Pré‑CGIBS), mantendo rastreabilidade.
+
+**Características**:
+- **Modelo**: `gpt-5.1`
+- **Ferramentas**: `file-search`, `web`, `logger`
+- **Prompt**: `agents/prompts/trusted-sources-enricher.system.md`
+
+**Como é acionado**:
+- Não é handoff do coordinator; é invocado como etapa adicional no workflow (`src/workflows/user-query.ts`) quando a pergunta indica IBS/CBS/CGIBS/reforma tributária (gating determinístico) ou quando a trilha é Legislação.
+
 ### 2. Triage/Router e Source Planner
 
 #### 2.1. Triage / Router (`triage-router`)

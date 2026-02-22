@@ -130,8 +130,13 @@ function detectFamilyAndDocType(
 }
 
 function detectUF(normalized: string): string | undefined {
-  const ufMatch = normalized.match(
-    /\b(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\b/
+  // Remover diacríticos para evitar falso positivo em palavras como "Alíquota" → "AL"
+  const folded = normalized
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  const ufMatch = folded.match(
+    /\b(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\b/i
   );
   return ufMatch ? ufMatch[1].toUpperCase() : undefined;
 }

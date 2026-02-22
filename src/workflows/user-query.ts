@@ -1,9 +1,10 @@
 /**
  * Workflow determinístico do /query:
- * triage → source planner → retrieval → coordinator (com contexto pré-recuperado) → resposta.
+ * triage → source planner → retrieval → coordinator (com contexto pré-recuperado) → (opcional) enricher → resposta.
  */
 
 import { invokeCoordinator, invokeCoordinatorStream } from "../agents/coordinator.js";
+import { invokeTrustedSourcesEnricher } from "../agents/enricher.js";
 import { getAgentDefinition } from "../agents/registry.js";
 import type { AgentId, UserQueryRequest, UserQueryResponse } from "../agents/types.js";
 import { classifyQuestion } from "./triage.js";
@@ -28,6 +29,27 @@ const SPECIALIST_CATALOG: AgentId[] = [
   "spec-transporte",
   "legislacao-ibs-cbs",
 ];
+
+function shouldRunTrustedSourcesEnricher(
+  triage: import("../agents/types.js").TriageResult,
+  question: string
+): boolean {
+  if (triage.trail === "Legislacao") return true;
+  const q = question.toLowerCase();
+  return (
+    q.includes("cgibs") ||
+    q.includes("pré-cgibs") ||
+    q.includes("pre-cgibs") ||
+    q.includes("ibs") ||
+    q.includes("cbs") ||
+    q.includes("impactos administrativos") ||
+    q.includes("reforma tribut")
+  );
+}
+
+function dedupeStrings(values: string[]): string[] {
+  return Array.from(new Set(values.filter((v) => typeof v === "string" && v.trim().length > 0)));
+}
 
 /**
  * Executa o fluxo: triage → planner → retrieval → coordinator.
@@ -76,6 +98,22 @@ export async function runUserQueryWorkflow(
     "docs/WORKFLOWS.md",
   ];
 
+  // Enriquecimento opcional: fontes confiáveis (CGIBS + Pré-CGIBS + bases internas)
+  let finalAnswer = coordinatorResponse.answer;
+  let finalSources = sources;
+
+  if (shouldRunTrustedSourcesEnricher(triageResult, input.question)) {
+    const enriched = await invokeTrustedSourcesEnricher({
+      question: input.question,
+      draftAnswer: coordinatorResponse.answer,
+      draftSources: sources,
+    });
+    if (enriched.answer && enriched.answer.trim().length > 0) {
+      finalAnswer = enriched.answer;
+      finalSources = dedupeStrings([...(sources || []), ...(enriched.sources || [])]);
+    }
+  }
+
   const elapsed = Date.now() - t0;
   const hitsByStore: Record<string, number> = {};
   for (const [storeId, texts] of retrieval.byStore) {
@@ -93,8 +131,9 @@ export async function runUserQueryWorkflow(
 
   return {
     ...coordinatorResponse,
+    answer: finalAnswer,
     plan,
-    sources,
+    sources: finalSources,
   };
 }
 
@@ -174,11 +213,29 @@ export async function runUserQueryWorkflowStream(
     "User query workflow (stream) completed"
   );
 
+  // Enriquecimento opcional (pós-coordinator)
+  let finalAnswer = coordinatorResponse.answer;
+  let finalSources = sources;
+
+  if (shouldRunTrustedSourcesEnricher(triageResult, input.question)) {
+    onEvent({ type: "step", step: "enricher_start", label: "Enriquecendo com fontes confiáveis…" });
+    const enriched = await invokeTrustedSourcesEnricher({
+      question: input.question,
+      draftAnswer: coordinatorResponse.answer,
+      draftSources: sources,
+    });
+    if (enriched.answer && enriched.answer.trim().length > 0) {
+      finalAnswer = enriched.answer;
+      finalSources = dedupeStrings([...(sources || []), ...(enriched.sources || [])]);
+    }
+    onEvent({ type: "step", step: "enricher_done", label: "Enriquecimento concluído" });
+  }
+
   onEvent({
     type: "done",
-    answer: coordinatorResponse.answer,
+    answer: finalAnswer,
     plan,
-    sources,
+    sources: finalSources,
     agentTraces: coordinatorResponse.agentTraces,
   });
 }

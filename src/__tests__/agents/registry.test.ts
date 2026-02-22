@@ -20,6 +20,7 @@ describe('Agent Registry', () => {
 
   it('should load specialist agent definitions', () => {
     const specialistIds: AgentId[] = [
+      'trusted-sources-enricher',
       'triage-router',
       'source-planner',
       'spec-mercadorias',

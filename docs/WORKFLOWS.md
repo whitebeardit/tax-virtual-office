@@ -23,7 +23,7 @@ Content-Type: application/json
 
 ### Fluxo Detalhado (orquestração determinística)
 
-O fluxo é **código-orquestra**: triage → source planner → retrieval → coordinator.
+O fluxo é **código-orquestra**: triage → source planner → retrieval → coordinator → (opcional) trusted-sources-enricher.
 
 ```mermaid
 sequenceDiagram
@@ -34,6 +34,7 @@ sequenceDiagram
     participant P as source-planner
     participant R as retrieval
     participant C as coordinator
+    participant E as trusted-sources-enricher
     participant VS as Vector Stores
 
     U->>API: POST /query
@@ -48,6 +49,8 @@ sequenceDiagram
     R-->>W: contexto agregado
     W->>C: invokeCoordinator(question + preRetrievedContext)
     C-->>W: answer, plan, sources
+    W->>E: invokeTrustedSourcesEnricher(question + draftAnswer)
+    E-->>W: enrichedAnswer, extra sources
     W-->>API: UserQueryResponse
     API-->>U: JSON com resposta
 ```
@@ -75,7 +78,11 @@ sequenceDiagram
    - Recebe a pergunta e o contexto pré-recuperado; pode fazer file-search adicional se necessário.
    - Consolida a resposta com fontes e traces.
 
-6. **Retorno ao Cliente**
+6. **Trusted Sources Enricher (opcional)**
+   - Executa um pós-processamento para enriquecer a resposta usando apenas fontes confiáveis (ex.: CGIBS e Pré‑CGIBS, além de bases internas).
+   - É acionado por regra determinística (gating) quando a pergunta indica IBS/CBS/CGIBS/reforma tributária ou quando a trilha é Legislação.
+
+7. **Retorno ao Cliente**
    - Resposta JSON com:
      - `answer`: Resposta consolidada
      - `plan`: Plano de execução

@@ -25,6 +25,7 @@ import {
 const agentCache = new Map<AgentId, Agent>();
 
 function getToolsForAgent(agentId: AgentId): any[] {
+  if (agentId === "trusted-sources-enricher") return coordinatorTools;
   if (agentId === "triage-router") return triageRouterTools;
   if (agentId === "source-planner") return sourcePlannerTools;
   return specialistTools;

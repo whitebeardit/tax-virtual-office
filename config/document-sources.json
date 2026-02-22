@@ -12,6 +12,21 @@
         ]
       },
       {
+        "pattern": "*.cgibs.gov.br",
+        "description": "CGIBS (Comitê Gestor do IBS) — conteúdos oficiais (notícias, central de conteúdo, guias, cartilhas, comunicados, documentos técnicos, legislações).",
+        "examples": [
+          "https://www.cgibs.gov.br/",
+          "https://www.cgibs.gov.br/noticias",
+          "https://www.cgibs.gov.br/guia-orientativo-pdf",
+          "https://www.cgibs.gov.br/central-de-conteudo",
+          "https://www.cgibs.gov.br/guias",
+          "https://www.cgibs.gov.br/cartilhas",
+          "https://www.cgibs.gov.br/comunicados-oficiais",
+          "https://www.cgibs.gov.br/documentos-tecnicos",
+          "https://www.cgibs.gov.br/legislacoes"
+        ]
+      },
+      {
         "pattern": "*.fazenda.gov.br",
         "description": "Domínios do Ministério da Fazenda",
         "examples": [
@@ -47,6 +62,16 @@
         "description": "Portal do CONFAZ (Conselho Nacional de Política Fazendária)",
         "examples": [
           "www.confaz.fazenda.gov.br"
+        ]
+      },
+      {
+        "pattern": "lookerstudio.google.com",
+        "description": "Looker Studio — permitido somente para o relatório oficial Pré-CGIBS (Impactos Administrativos). Não permitir outros relatórios.",
+        "examples": [
+          "https://lookerstudio.google.com/u/0/reporting/dd2797fa-da7a-4a28-beb9-1584c0330d1e/page/p_pzv4ek8lwd"
+        ],
+        "pathAllowlist": [
+          "/u/0/reporting/dd2797fa-da7a-4a28-beb9-1584c0330d1e"
         ]
       }
     ]

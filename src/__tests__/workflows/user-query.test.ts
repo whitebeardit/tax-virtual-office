@@ -8,6 +8,11 @@ jest.mock('../../agents/coordinator.js', () => ({
   invokeCoordinator: (request: UserQueryRequest) => mockInvokeCoordinator(request),
 }));
 
+const mockInvokeEnricher = jest.fn();
+jest.mock('../../agents/enricher.js', () => ({
+  invokeTrustedSourcesEnricher: (...args: unknown[]) => mockInvokeEnricher(...args),
+}));
+
 jest.mock('../../agents/registry.js', () => ({
   getAgentDefinition: jest.fn((id: string) => ({
     id,
@@ -45,6 +50,10 @@ describe('User Query Workflow', () => {
       agentTraces: [],
       sources: ['source1'],
     });
+    (mockInvokeEnricher as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue({
+      answer: 'Enriched answer',
+      sources: ['enricherSource'],
+    });
 
     const request: UserQueryRequest = {
       question: 'What is the ICMS rate?',
@@ -57,6 +66,7 @@ describe('User Query Workflow', () => {
     expect(result.plan).toBeDefined();
     expect(result.sources).toBeDefined();
     expect(mockInvokeCoordinator).toHaveBeenCalled();
+    expect(mockInvokeEnricher).not.toHaveBeenCalled();
     const coordinatorArg = mockInvokeCoordinator.mock.calls[0][0];
     expect(coordinatorArg.question).toBe(request.question);
     expect(coordinatorArg.triageResult).toBeDefined();
@@ -136,14 +146,20 @@ describe('User Query Workflow', () => {
       agentTraces: [],
       sources: [],
     });
+    (mockInvokeEnricher as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue({
+      answer: 'Enriched',
+      sources: ['agents/prompts/trusted-sources-enricher.system.md'],
+    });
 
-    await runUserQueryWorkflow({
+    const result = await runUserQueryWorkflow({
       question: 'Qual a alíquota do IBS para medicamentos em 2027?',
     });
 
     const [, storeIds] = mockRunRetrieval.mock.calls[0] as [string, string[]];
     expect(storeIds.some((id: string) => id === 'vs_legal_federal' || id === 'vs_tabelas_fiscais')).toBe(true);
     storeIds.forEach((id: string) => expect(id).toMatch(/^vs_/));
+    expect(mockInvokeEnricher).toHaveBeenCalled();
+    expect(result.answer).toBe('Enriched');
   });
 
   it('should plan vs_tabelas_fiscais for cálculo', async () => {

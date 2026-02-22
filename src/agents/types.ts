@@ -1,5 +1,6 @@
 export type AgentId =
   | "coordinator"
+  | "trusted-sources-enricher"
   | "triage-router"
   | "source-planner"
   | "spec-mercadorias"

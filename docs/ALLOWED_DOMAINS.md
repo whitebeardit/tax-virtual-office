@@ -41,15 +41,21 @@ Esta configuração centralizada garante:
      - **CT-e**: `/Cte/Noticias`, `/Cte/Documentos`, `/Cte/Legislacao`
      - **MDF-e**: `/Mdfe/Noticias`, `/Mdfe/Documentos`, `/Mdfe/Legislacao`
 
-6. **`encat.org.br`**
-   - **ENCAT** (Entidade Nacional de Coordenação e Acompanhamento da NFC-e)
-   - Portal com documentação técnica sobre NFC-e
-   - Exemplo: `www.encat.org.br`
-
-7. **`confaz.fazenda.gov.br`**
+6. **`confaz.fazenda.gov.br`**
    - **CONFAZ** (Conselho Nacional de Política Fazendária)
    - Portal com ajustes SINIEF e legislação tributária
    - Exemplo: `www.confaz.fazenda.gov.br`
+
+7. **`*.cgibs.gov.br`**
+   - **CGIBS** (Comitê Gestor do IBS)
+   - Conteúdos oficiais: notícias, central de conteúdo, guias, cartilhas, comunicados, documentos técnicos e legislações
+   - Exemplo: `https://www.cgibs.gov.br/central-de-conteudo`
+
+8. **`lookerstudio.google.com`** (restrito por path)
+   - **Looker Studio** (permitido somente para o relatório oficial Pré‑CGIBS)
+   - **Restrição**: apenas URLs cujo path comece com:
+     - `/u/0/reporting/dd2797fa-da7a-4a28-beb9-1584c0330d1e`
+   - Exemplo: `https://lookerstudio.google.com/u/0/reporting/dd2797fa-da7a-4a28-beb9-1584c0330d1e/page/p_pzv4ek8lwd`
 
 ## Portais Principais
 
@@ -86,14 +92,15 @@ Para adicionar um novo domínio permitido:
          {
            "pattern": "novo-dominio.gov.br",
            "description": "Descrição do domínio",
-           "examples": ["www.novo-dominio.gov.br"]
+           "examples": ["www.novo-dominio.gov.br"],
+           "pathAllowlist": ["/apenas/este/prefixo"] // opcional (restrição por path)
          }
        ]
      }
    }
    ```
 
-   **Nota**: O código em `src/config/allowed-domains.ts` lê automaticamente do JSON. Não é necessário editar o código TypeScript manualmente. O padrão será validado automaticamente pela função `isAllowedDomain()` que verifica os padrões definidos no JSON.
+   **Nota**: O código em `src/config/allowed-domains.ts` lê automaticamente do JSON. Não é necessário editar o código TypeScript manualmente para novos domínios/prefixos.
 
 2. **Atualizar documentação**:
    - Adicionar entrada nesta documentação

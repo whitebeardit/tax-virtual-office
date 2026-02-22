@@ -11,6 +11,11 @@ interface DomainConfig {
   pattern: string;
   description: string;
   examples: string[];
+  /**
+   * Restringe a permissão do domínio a prefixos específicos de path.
+   * Útil para permitir apenas uma URL/relatório específico (ex.: Looker Studio).
+   */
+  pathAllowlist?: string[];
 }
 
 interface PortalConfig {
@@ -98,24 +103,76 @@ function loadConfig(): DocumentSourcesConfig {
 export function isAllowedDomain(url: string): boolean {
   const config = loadConfig();
   const urlObj = new URL(url);
-  const hostname = urlObj.hostname.toLowerCase();
 
-  // Lista de padrões permitidos (extraídos da config)
-  const allowedPatterns = [
-    // Padrões genéricos
-    (host: string) => host.endsWith(".gov.br"),
-    (host: string) => host.endsWith(".fazenda.gov.br"),
-    (host: string) => host.endsWith(".fazenda.sp.gov.br"),
-    (host: string) => host.endsWith(".fazenda.mg.gov.br"),
-    
-    // Domínios específicos
-    (host: string) => host === "dfe-portal.svrs.rs.gov.br" || host.endsWith(".svrs.rs.gov.br"),
-    // ENCAT removido - site não existe mais
-    // (host: string) => host === "encat.org.br" || host.endsWith(".encat.org.br"),
-    (host: string) => host === "confaz.fazenda.gov.br" || host.endsWith(".confaz.fazenda.gov.br"),
-  ];
+  const hostname = urlObj.hostname.toLowerCase().trim();
+  const pathname = safeNormalizePathname(urlObj.pathname);
 
-  return allowedPatterns.some((pattern) => pattern(hostname));
+  const domains = config.allowedDomains?.domains || [];
+
+  for (const domain of domains) {
+    const pattern = (domain?.pattern || "").toLowerCase().trim();
+    if (!pattern) continue;
+
+    if (!matchesHostPattern(hostname, pattern)) continue;
+
+    const pathAllowlist = (domain.pathAllowlist || [])
+      .map((p) => (typeof p === "string" ? p.trim() : ""))
+      .filter((p) => p.length > 0);
+
+    // Sem restrição por path: domínio liberado
+    if (pathAllowlist.length === 0) return true;
+
+    // Com restrição por path: exige match por prefixo (com boundary)
+    if (pathAllowlist.some((prefix) => pathMatchesPrefix(pathname, prefix))) {
+      return true;
+    }
+
+    return false;
+  }
+
+  return false;
+}
+
+function matchesHostPattern(hostname: string, pattern: string): boolean {
+  // pattern "*.example.com" → qualquer subdomínio de example.com
+  if (pattern.startsWith("*.")) {
+    const suffix = pattern.slice(1); // ".example.com"
+    return hostname.endsWith(suffix);
+  }
+
+  // pattern "example.com" → match exato
+  return hostname === pattern;
+}
+
+function safeNormalizePathname(pathname: string): string {
+  const raw = typeof pathname === "string" && pathname.length > 0 ? pathname : "/";
+  // Normalizar para comparação resiliente (URLs aqui são “fontes”, não roteamento)
+  try {
+    return decodeURIComponent(raw).toLowerCase();
+  } catch {
+    return raw.toLowerCase();
+  }
+}
+
+function normalizePathPrefix(prefix: string): string {
+  const trimmed = prefix.trim();
+  if (!trimmed) return "/";
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
+/**
+ * Match por prefixo com boundary para evitar bypass por concatenação.
+ * Ex.: prefix "/u/0/reporting/<id>" não deve aceitar "/u/0/reporting/<id>FAKE".
+ */
+function pathMatchesPrefix(pathname: string, prefix: string): boolean {
+  const normalizedPrefix = normalizePathPrefix(prefix).toLowerCase();
+  const base = normalizedPrefix.endsWith("/")
+    ? normalizedPrefix.slice(0, -1)
+    : normalizedPrefix;
+
+  if (!pathname.startsWith(base)) return false;
+  if (pathname.length === base.length) return true;
+  return pathname.charAt(base.length) === "/";
 }
 
 /**
@@ -148,15 +205,41 @@ export function validateUrl(url: string): { valid: boolean; error?: string } {
     };
   }
 
-  if (!isAllowedDomain(url)) {
-    const allowed = getAllowedDomains().join(", ");
+  const config = loadConfig();
+  const urlObj = new URL(url);
+  const hostname = urlObj.hostname.toLowerCase().trim();
+  const pathname = safeNormalizePathname(urlObj.pathname);
+
+  const domains = config.allowedDomains?.domains || [];
+
+  for (const domain of domains) {
+    const pattern = (domain?.pattern || "").toLowerCase().trim();
+    if (!pattern) continue;
+    if (!matchesHostPattern(hostname, pattern)) continue;
+
+    const pathAllowlist = (domain.pathAllowlist || [])
+      .map((p) => (typeof p === "string" ? p.trim() : ""))
+      .filter((p) => p.length > 0);
+
+    if (pathAllowlist.length === 0) return { valid: true };
+
+    if (pathAllowlist.some((prefix) => pathMatchesPrefix(pathname, prefix))) {
+      return { valid: true };
+    }
+
     return {
       valid: false,
-      error: `URL '${url}' não é um domínio oficial permitido. Domínios permitidos: ${allowed}`,
+      error: `URL '${url}' é permitida apenas para caminhos específicos em '${domain.pattern}': ${pathAllowlist.join(
+        ", "
+      )}`,
     };
   }
 
-  return { valid: true };
+  const allowed = getAllowedDomains().join(", ");
+  return {
+    valid: false,
+    error: `URL '${url}' não é um domínio oficial permitido. Domínios permitidos: ${allowed}`,
+  };
 }
 
 /**

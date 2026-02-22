@@ -48,7 +48,8 @@ Fonte primária de informação para conteúdo completo e busca semântica.
   - Apenas para dados objetivos (datas de publicação, número e ementa de lei, URL oficial), priorizando:
     - `*.gov.br`, `*.fazenda.gov.br`, `*.fazenda.sp.gov.br`, `*.fazenda.mg.gov.br`
     - `confaz.fazenda.gov.br`
-    - `encat.org.br`
+    - `*.cgibs.gov.br` (CGIBS — Comitê Gestor do IBS)
+    - `lookerstudio.google.com` (apenas o relatório oficial Pré‑CGIBS; restrito por path)
   - Nunca use conteúdo de blogs, consultorias privadas ou fontes não oficiais como base normativa.
 - **logger**:
   - Registrar:
@@ -95,6 +96,8 @@ Quando incluir URLs na resposta:
    - `*.fazenda.mg.gov.br` (SEFAZ-MG)
    - `dfe-portal.svrs.rs.gov.br` (SVRS - SEFAZ Virtual RS)
    - `confaz.fazenda.gov.br` (CONFAZ)
+   - `*.cgibs.gov.br` (CGIBS)
+   - `lookerstudio.google.com` (somente relatório Pré‑CGIBS; restrito por path)
 
 4. **Portais principais** (preferir SVRS quando disponível):
    - Portal Nacional NF-e: `https://www.nfe.fazenda.gov.br/portal`

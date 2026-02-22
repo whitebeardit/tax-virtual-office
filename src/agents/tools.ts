@@ -143,6 +143,56 @@ async function validateUrlWithWebSearch(url: string): Promise<{
   }
 }
 
+function extractSnippetsFromContent(
+  content: string,
+  query: string,
+  options?: { maxSnippets?: number; contextChars?: number; maxTotalChars?: number }
+): { found: boolean; snippets: string[] } {
+  const maxSnippets = options?.maxSnippets ?? 3;
+  const contextChars = options?.contextChars ?? 240;
+  const maxTotalChars = options?.maxTotalChars ?? 2000;
+
+  const q = query.trim();
+  if (!q) return { found: false, snippets: [] };
+
+  const hay = content;
+  const hayLower = hay.toLowerCase();
+  const needleLower = q.toLowerCase();
+
+  const snippets: string[] = [];
+  let fromIndex = 0;
+  let totalChars = 0;
+
+  while (snippets.length < maxSnippets) {
+    const idx = hayLower.indexOf(needleLower, fromIndex);
+    if (idx === -1) break;
+
+    const start = Math.max(0, idx - contextChars);
+    const end = Math.min(hay.length, idx + needleLower.length + contextChars);
+
+    let snippet = hay.slice(start, end).replace(/\s+/g, " ").trim();
+
+    // Evitar explodir tamanho total
+    if (snippet.length + totalChars > maxTotalChars) {
+      const remaining = Math.max(0, maxTotalChars - totalChars);
+      snippet = snippet.slice(0, remaining).trim();
+    }
+
+    if (snippet.length > 0) {
+      const prefix = start > 0 ? "…" : "";
+      const suffix = end < hay.length ? "…" : "";
+      snippets.push(`${prefix}${snippet}${suffix}`);
+      totalChars += snippet.length;
+    }
+
+    if (totalChars >= maxTotalChars) break;
+
+    fromIndex = idx + needleLower.length;
+  }
+
+  return { found: snippets.length > 0, snippets };
+}
+
 /**
  * Tool: web
  * Consulta sites oficiais (domínios permitidos conforme config/document-sources.json)
@@ -156,11 +206,13 @@ Se uma URL não estiver acessível, uma URL alternativa do site oficial será fo
 
 Domínios permitidos (conforme config/document-sources.json):
 - *.gov.br (todos os domínios do governo brasileiro)
+- *.cgibs.gov.br (CGIBS - Comitê Gestor do IBS)
 - *.fazenda.gov.br (Ministério da Fazenda)
 - *.fazenda.sp.gov.br (SEFAZ-SP)
 - *.fazenda.mg.gov.br (SEFAZ-MG)
 - dfe-portal.svrs.rs.gov.br (SVRS - SEFAZ Virtual Rio Grande do Sul, autorizador compartilhado)
 - confaz.fazenda.gov.br (CONFAZ - Conselho Nacional de Política Fazendária)
+- lookerstudio.google.com (somente relatório Pré-CGIBS; restrito por path)
 
 Portais principais:
 - Portal Nacional NF-e: https://www.nfe.fazenda.gov.br/portal
@@ -217,15 +269,20 @@ NUNCA use para conteúdo interpretativo ou de blogs/consultorias privadas.`,
       // Fazer requisição real à URL
       const content = await httpFetch(url);
       
-      // Se houver query, tentar buscar no conteúdo (implementação básica)
+      // Se houver query, tentar buscar no conteúdo e retornar trechos curtos (snippets)
       if (query) {
-        const lowerContent = content.toLowerCase();
-        const lowerQuery = query.toLowerCase();
-        if (lowerContent.includes(lowerQuery)) {
-          return `Informação encontrada no site oficial '${url}' para a query "${query}".\n\nConteúdo relevante encontrado na página.`;
-        } else {
+        const { found, snippets } = extractSnippetsFromContent(content, query, {
+          maxSnippets: 3,
+          contextChars: 240,
+          maxTotalChars: 2000,
+        });
+
+        if (!found) {
           return `Consulta ao site oficial '${url}' com query: "${query}".\n\nA query não foi encontrada no conteúdo da página. Verifique a URL ou tente termos diferentes.`;
         }
+
+        const formatted = snippets.map((s, i) => `${i + 1}) ${s}`).join("\n\n");
+        return `Consulta ao site oficial '${url}' com query: "${query}".\n\nTrechos encontrados (HTML/texto):\n\n${formatted}`;
       }
       
       return `Consulta ao site oficial '${url}' realizada com sucesso.\n\nConteúdo da página obtido. Use file-search para informações mais detalhadas dos documentos armazenados.`;

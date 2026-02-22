@@ -8,6 +8,15 @@ agents:
       - web
       - logger
 
+  - id: trusted-sources-enricher
+    name: Trusted Sources Enricher (CGIBS + Pré-CGIBS)
+    model: gpt-5.1
+    instructions_file: ./prompts/trusted-sources-enricher.system.md
+    tools:
+      - file-search
+      - web
+      - logger
+
   - id: triage-router
     name: Triage / Router
     model: gpt-5.1

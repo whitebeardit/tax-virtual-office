@@ -3,6 +3,21 @@ import https from "https";
 import http from "http";
 import { URL } from "url";
 
+/** Timeout em ms para requisições HTTP (alinhado ao caminho nativo). */
+const FETCH_TIMEOUT_MS = 30000;
+
+/**
+ * Headers de browser para evitar ECONNRESET em sites que rejeitam clientes sem User-Agent
+ * (ex.: cgibs.gov.br).
+ */
+const BROWSER_HEADERS: Record<string, string> = {
+  "User-Agent":
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  Accept:
+    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+};
+
 /**
  * Domínios que precisam ter validação de certificado SSL desabilitada
  * devido a problemas com certificados autoassinados ou cadeias inválidas
@@ -46,6 +61,7 @@ function fetchWithUnsafeSSL(url: string): Promise<string> {
       port: urlObj.port || (urlObj.protocol === "https:" ? 443 : 80),
       path: urlObj.pathname + urlObj.search,
       method: "GET",
+      headers: BROWSER_HEADERS,
     };
 
     // Desabilitar validação SSL apenas para HTTPS
@@ -85,9 +101,11 @@ function fetchWithUnsafeSSL(url: string): Promise<string> {
 
 /**
  * Faz uma requisição HTTP/HTTPS
- * 
+ *
  * Para domínios com problemas de certificado SSL (como CONFAZ),
  * usa módulo nativo do Node.js com validação SSL desabilitada.
+ * Headers de browser (User-Agent, Accept, Accept-Language) são enviados
+ * para evitar ECONNRESET em sites que rejeitam clientes não-browser (ex.: cgibs.gov.br).
  */
 export async function httpFetch(url: string): Promise<string> {
   // Para domínios com problemas de SSL, usar módulo nativo
@@ -95,10 +113,19 @@ export async function httpFetch(url: string): Promise<string> {
     return fetchWithUnsafeSSL(url);
   }
 
-  // Para outros domínios, usar node-fetch normalmente
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`HTTP fetch failed: ${response.status}`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      headers: BROWSER_HEADERS,
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP fetch failed: ${response.status}`);
+    }
+    return response.text();
+  } finally {
+    clearTimeout(timeoutId);
   }
-  return response.text();
 }

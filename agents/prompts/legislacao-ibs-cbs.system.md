@@ -54,6 +54,8 @@ Quando incluir URLs na resposta:
    - `dfe-portal.svrs.rs.gov.br` (SVRS - SEFAZ Virtual RS)
    - `confaz.fazenda.gov.br` (CONFAZ)
    - `planalto.gov.br` (Presidência da República - para leis e decretos)
+   - `*.cgibs.gov.br` (CGIBS — Comitê Gestor do IBS)
+   - `lookerstudio.google.com` (somente relatório Pré‑CGIBS; restrito por path)
 
 3. **Portais principais para legislação**:
    - Portal do Planalto: `https://www.planalto.gov.br` (para EC, LC, decretos)
