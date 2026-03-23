@@ -1,0 +1,31 @@
+# Cursor index exclusions when workspace root is tax-virtual-office only.
+
+# Dependencies and build outputs
+node_modules/
+dist/
+build/
+**/.vite/
+**/.turbo/
+**/.cache/
+*.tsbuildinfo
+
+# Test artifacts
+coverage/
+.nyc_output/
+test-results/
+
+# Secrets (keep example)
+.env
+.env.*
+!.env.example
+
+# Generated JS from TypeScript (see .gitignore)
+scripts/*.js
+
+# Agent cache
+agents/.cache/
+
+# OS / logs
+.DS_Store
+*.log
+npm-debug.log*
